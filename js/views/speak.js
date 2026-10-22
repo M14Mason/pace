@@ -247,6 +247,7 @@ async function finishSession(out, prompt, lang, results, transcriptEl) {
     const ai = await analyzeSpeech({ prompt: prompt[1], transcript: text, metrics: m, lang });
     const avg = avgScore(ai.scores); if (avg > Math.max(0, ...S().speak.filter(x => x.ai && x !== sess).map(x => avgScore(x.ai.scores)))) addRecord('score', `Speak: ${avg}/10 articulation`, avg / 10);
     sess.ai = ai; save();
+    import('../store.js').then(m => m.autoLog('tip', `Speaking: ${ai.nextFocus}`, ['speak'], 'speak:' + sess.id));
     loading.replaceWith(aiCard(ai, lang));
     fx.stagger([...results.querySelectorAll('.card')]);
   } catch (e) { loading.replaceWith(card('Wording analysis', h('p', { class: 'muted' }, aiErrorText(e)))); }

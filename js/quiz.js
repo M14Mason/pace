@@ -3,7 +3,7 @@
 // and the misses, then the ONLY way out is to clear every miss. Each miss comes back
 // with hints that escalate: recall the rule -> strategy -> where you are in the problem
 // -> full worked steps. A round in progress survives reloads.
-import { S, save, recordActivity, markQ, srsReview, recordSpeed } from './store.js';
+import { S, save, recordActivity, markQ, srsReview, recordSpeed, autoLog } from './store.js';
 import { h, $, fmtMs, pct, rich, shuffle, md } from './ui.js';
 import * as fx from './fx.js';
 import { check as mathCheck, fmtAns } from './math/skills.js';
@@ -145,6 +145,9 @@ export function renderRound(root) {
       m.tries++;
       if (isRight(q, val)) {
         locked = true;
+        // the hint that got you there becomes a Log tip (first hint = the rule, deeper = the strategy)
+        const used = (q.hints || [])[Math.min(m.hints, (q.hints || []).length) - 1];
+        if (used) autoLog(m.hints > 1 ? 'strategy' : 'tip', `${used}${q.explain && q.mc ? '\nWhy: ' + q.explain : ''}`, [...(R.tags || []), q.skill].filter(Boolean), used);
         fx.correct($('.qcard', stage));
         const explain = q.explain && q.mc ? h('div', { class: 'explain' }, h('b', {}, 'Why: '), h('span', { html: md(q.explain) })) : null;
         if (explain) { stage.append(explain); fx.pop(explain); }

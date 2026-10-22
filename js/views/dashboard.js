@@ -80,7 +80,7 @@ export function render(root) {
     h('div', { class: 'row', style: { marginBottom: '12px' } },
       h('button', { class: 'btn primary', style: { flex: 2, minHeight: '54px', fontSize: '16px' }, onclick: continueNext }, resume ? '▶ Resume round' : dayDone(d) ? '▶ Keep going' : '▶ Continue'),
       dayDone(d) ? null : h('button', { class: 'btn', style: { flex: 1, minHeight: '54px' }, onclick: startMinimumDay, title: '6 math + 4 AP questions, counts as a required day' }, 'Tired? 5 min')),
-    !st.profile.placementDone ? h('a', { class: 'card accent', href: '#/placement', style: { display: 'block', textDecoration: 'none', marginBottom: '12px' } }, h('h3', {}, 'Take the placement test (≈ 6 min)'), h('div', { class: 'small muted' }, 'Sets your starting levels and shapes your plan.')) : null,
+    !st.profile.placementDone ? h('a', { class: 'card accent', href: '#/placement', style: { display: 'block', textDecoration: 'none', marginBottom: '12px' } }, h('h3', {}, 'Take the placement test (≈ 3 min)'), h('div', { class: 'small muted' }, 'Sets your starting levels and shapes your plan.')) : null,
     h('div', { class: 'grid g2' },
       card('Today', h('div', { class: 'hero' }, scoreRing, h('div', { class: 'hero-text stack' },
         h('div', {}, h('div', { class: 'kpi-l' }, 'This week'), h('div', { class: 'kpi-v' }, `${wc}/${goal}`, h('span', { class: 'small muted' }, ' required days')), bar(wc / goal, { cls: wc >= goal ? 'good' : '' })),

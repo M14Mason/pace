@@ -50,7 +50,8 @@ function moveDock(href) {
   const target = links.map(l => (l.classList.contains('on') ? 3 : 1));
   links.forEach((l, i) => (l.style.flexGrow = target[i]));
   const on = links.find(l => l.classList.contains('on'));
-  if (!on || getComputedStyle(bar).display === 'none') return;
+  if (window.gsap) gsap.to(ind, { opacity: on ? 1 : 0, duration: 0.2 }); else ind.style.opacity = on ? 1 : 0;
+  if (!on || getComputedStyle(bar).display === 'none') { dockReady = false; return; }
   const br = bar.getBoundingClientRect(), r = on.getBoundingClientRect();
   const x = r.left - br.left, w = r.width;
   if (!window.gsap || !dockReady) { links.forEach((l, i) => (l.style.flexGrow = target[i])); if (window.gsap) gsap.set(ind, { x, width: w }); else Object.assign(ind.style, { transform: `translateX(${x}px)`, width: w + 'px' }); dockReady = !!window.gsap; return; }
@@ -86,7 +87,7 @@ async function route() {
   if (typeof cleanup === 'function') { try { cleanup(); } catch { } }
   cleanup = null;
   unbindKeys();
-  if (hash !== '#/round') document.body.classList.remove('in-round');
+  document.body.classList.toggle('in-round', hash === '#/round' || hash === '#/placement');
   view.innerHTML = '';
   const base = '#/' + (hash.split('/')[1] || '');
   document.querySelectorAll('#nav .nav-a').forEach(a => a.classList.toggle('on', a.dataset.href === base));

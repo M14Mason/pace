@@ -9,11 +9,13 @@ import { sk } from './sprint.js';
 import * as fx from '../fx.js';
 
 export function render(root) {
-  const order = ['add', 'sub', 'mul', 'div', 'pct', 'tip', 'disc', 'tax', 'total', 'frac', 'ratio', 'mental', 'fin'];
+  // One question per core skill; the rest are derived (totals≈addition, mental≈multiplication, tax≈discounts, finance≈percent).
+  const order = ['add', 'sub', 'mul', 'div', 'pct', 'tip', 'disc', 'frac', 'ratio'];
+  const DERIVED = { total: 'add', mental: 'mul', tax: 'disc', fin: 'pct' };
   const results = {};
   let si = 0, step = 0, firstOk = false, t0 = 0, cur = null;
   const courseQs = [
-    ['apwh', 0, 0], ['apwh', 3, 0], ['apwh', 4, 1], ['chem', 1, 0], ['chem', 4, 0], ['span2', 2, 0], ['abm', 1, 0], ['appsych', 0, 0],
+    ['apwh', 0, 0], ['chem', 1, 0], ['span2', 2, 0], ['abm', 1, 0],
   ].map(([cid, ui, qi]) => ({ cid, q: fromBank(COURSE[cid].units[ui].qs[qi], null) }));
   const course = {};
   let ci = 0;
@@ -21,10 +23,10 @@ export function render(root) {
   const intro = () => {
     root.innerHTML = '';
     root.append(h('div', { class: 'lesson' },
-      h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Placement'), h('div', { class: 'sub' }, 'About 6 minutes. No hints, no pressure - this just finds your starting point.'))),
+      h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Placement'), h('div', { class: 'sub' }, 'About 3 minutes. No hints, no pressure - this just finds your starting point.'))),
       card('', h('div', { class: 'stack' },
-        h('p', {}, h('b', {}, 'Part 1 · Mental math (26 questions). '), 'Two per skill: the second adapts to how you did on the first. Use the keypad or your keyboard. Don\'t use a calculator - the point is to find where to start.'),
-        h('p', {}, h('b', {}, 'Part 2 · Course check (8 questions). '), 'A quick read on AP World, Chemistry, Spanish, management and psychology.'),
+        h('p', {}, h('b', {}, 'Part 1 · Mental math (9 questions). '), 'One per skill, about 2 minutes. Use the keypad or your keyboard. Don\'t use a calculator - the point is to find where to start.'),
+        h('p', {}, h('b', {}, 'Part 2 · Course check (4 questions). '), 'A quick read on AP World, Chemistry, Spanish and management.'),
         h('p', { class: 'small muted' }, 'Guess if you have no idea. "I don\'t know" is fine too - type 0.'),
         h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: next }, 'Start'), h('button', { class: 'btn ghost', onclick: skip }, 'Skip for now'))))));
   };
@@ -33,21 +35,18 @@ export function render(root) {
   function next() {
     if (si >= order.length) return coursePart();
     const id = order[si];
-    const L = step === 0 ? 3 : firstOk ? 5 : 1;
+    const L = 3;
     cur = makeQ(id, L, 'free');
     t0 = performance.now();
     root.innerHTML = '';
-    const qc = h('div', { class: 'qcard' }, h('div', { class: 'q-count' }, `Math ${si * 2 + step + 1} / ${order.length * 2} · ${SKILL[id].name}`), h('div', { class: 'q-prompt', html: md(cur.q) }));
+    const qc = h('div', { class: 'qcard' }, h('div', { class: 'q-count' }, `Math ${si + 1} / ${order.length} · ${SKILL[id].name}`), h('div', { class: 'q-prompt', html: md(cur.q) }));
     root.append(h('div', { class: 'round' }, h('div', { class: 'round-dots' }, ...order.map((_, k) => h('i', { class: k < si ? 'ok' : k === si ? 'cur' : '' }))), h('div', { class: 'round-stage' }, qc,
       keypad(cur, v => {
         const ok = check(cur, v), ms = performance.now() - t0;
         const fast = ms <= SKILL[id].targets[L - 1] * 1.4;
         ok ? fx.correct(qc) : fx.wrong(qc);
-        if (step === 0) { firstOk = ok && fast; step = 1; }
-        else {
-          results[id] = firstOk ? (ok ? (fast ? 5 : 4) : 3) : (ok ? 2 : 1);
-          step = 0; si++;
-        }
+        results[id] = ok ? (fast ? 4 : 3) : 1;
+        si++;
         setTimeout(next, 250);
       }))));
     fx.pop(qc);
@@ -64,16 +63,17 @@ export function render(root) {
 
   function finish() {
     unbindKeys();
+    for (const [d, from] of Object.entries(DERIVED)) results[d] = Math.max(1, (results[from] || 1) - 1);
     for (const [id, L] of Object.entries(results)) sk(id).level = L;
     for (const [cid, arr] of Object.entries(course)) S().courseSelf[cid] = arr.filter(Boolean).length / arr.length;
     S().profile.placementDone = true;
-    recordActivity({ area: 'math', ms: 6 * 60000 });
+    recordActivity({ area: 'math', ms: 3 * 60000 });
     save();
     const weak = Object.entries(results).sort((a, b) => a[1] - b[1]).slice(0, 3);
     root.innerHTML = '';
     root.append(h('div', { class: 'lesson' },
       h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Your starting point'), h('div', { class: 'sub' }, 'Levels are set. Your plan now weights your weakest skills.'))),
-      card('Math levels', h('div', { class: 'score-grid' }, ...order.map(id => h('div', { class: 'score-cell' }, h('div', { class: 'v' }, `L${results[id]}`), h('div', { class: 'l' }, SKILL[id].name))))),
+      card('Math levels', h('div', { class: 'score-grid' }, ...Object.keys(results).map(id => h('div', { class: 'score-cell' }, h('div', { class: 'v' }, `L${results[id]}`), h('div', { class: 'l' }, SKILL[id].name))))),
       card('Focus first', h('ul', {}, ...weak.map(([id, L]) => h('li', {}, h('b', {}, SKILL[id].name), ` - Level ${L}. Start with "Learn the why", then sprint.`)))),
       card('Courses', h('div', { class: 'stack' }, ...Object.entries(course).map(([cid, arr]) => h('div', { class: 'row between' }, h('span', {}, COURSE[cid].name), h('span', { class: 'chip' }, `${arr.filter(Boolean).length}/${arr.length}`))))),
       h('a', { class: 'btn primary wide', href: '#/' }, 'Go to Dashboard')));

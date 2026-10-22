@@ -238,3 +238,13 @@ export function snapshotReadiness(map) {
   (state.readinessLog ||= {})[today()] = map;
   save();
 }
+
+// Automatic Log entries (deduped by key) - things Pace taught you and what fixed a miss.
+export function autoLog(type, text, tags = [], key = text) {
+  if (!text) return;
+  const k = 'auto:' + key;
+  if (state.log.some(e => e.autoKey === k)) return;
+  state.log.unshift({ id: uid(), type, text, tags, ts: Date.now(), auto: true, autoKey: k });
+  state.log = state.log.slice(0, 600);
+  save();
+}

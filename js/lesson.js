@@ -1,7 +1,7 @@
 // Lesson player. Order follows how the student learns: the why -> a worked example
 // revealed step by step (predict each step before tapping) -> key points -> a short
 // check with hints only after a miss. Guidance fades: checks have no hints up front.
-import { S, save, uid } from './store.js';
+import { S, save, uid, autoLog } from './store.js';
 import { h, md, toast } from './ui.js';
 import { startRound, onRoundFinish } from './quiz.js';
 import * as fx from './fx.js';
@@ -29,18 +29,19 @@ export function renderLesson(root, { lesson, key, back, title, sub, check, area,
       h('button', { class: 'btn sm ghost', onclick: saveKey }, '+ Save to Log')),
     h('div', { class: 'lesson-step' }, h('h3', {}, '4 · Check for understanding'),
       h('p', {}, check.length ? `${check.length} quick questions. No hints until you miss one - then they come back with hints until you get them.` : 'No check questions for this lesson yet.'),
-      check.length ? h('button', { class: 'btn primary', onclick: () => startRound({ kind: 'lesson-check', meta: { key, back }, title: `Check · ${lesson.t}`, questions: check, area, req, tags }) }, 'Start check') :
-        h('button', { class: 'btn', onclick: () => { markDone(key, 1); location.hash = back; } }, 'Mark as done'))));
+      check.length ? h('button', { class: 'btn primary', onclick: () => startRound({ kind: 'lesson-check', meta: { key, back, lesson, tags }, title: `Check · ${lesson.t}`, questions: check, area, req, tags }) }, 'Start check') :
+        h('button', { class: 'btn', onclick: () => { markDone(key, 1, lesson, tags); location.hash = back; } }, 'Mark as done'))));
 }
 
-function markDone(key, score) {
+function markDone(key, score, lesson, tags) {
+  if (lesson) autoLog('formula', `${lesson.t}\n- ${lesson.key.join('\n- ')}`, tags || [], 'lesson:' + key);
   const prev = S().lessons[key];
   S().lessons[key] = { done: true, score: Math.max(score, prev?.score || 0), ts: Date.now() };
   save();
 }
 
 onRoundFinish('lesson-check', res => {
-  markDone(res.meta.key, res.acc);
+  markDone(res.meta.key, res.acc, res.meta.lesson, res.meta.tags);
   location.hash = res.meta.back;
   setTimeout(() => res.acc >= 0.8 ? toast(`Lesson done · ${Math.round(res.acc * 100)}% first try`, 'good') : toast('Lesson done - missed items are scheduled for review tomorrow'), 400);
 });

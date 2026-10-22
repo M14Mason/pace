@@ -1,5 +1,5 @@
 // Math Sprint: skill levels, timed rounds, and the accuracy + speed gate.
-import { S, save, addRecord } from '../store.js';
+import { S, save, addRecord, autoLog } from '../store.js';
 import { h, card, bar, fmtMs, pct, modal, seg, md, shuffle, pick, toast } from '../ui.js';
 import { SKILLS, SKILL, GROUPS, makeQ, evaluateRound, fmtAns } from '../math/skills.js';
 import { startRound, onRoundFinish, relevantTips } from '../quiz.js';
@@ -60,6 +60,7 @@ onRoundFinish('sprint-test', res => {
     setTimeout(() => fx.levelUp(L < 8 ? `${SKILL[id].name} → Level ${L + 1}` : `${SKILL[id].name} mastered`, `${pct(res.acc)} at ${fmtMs(res.med)} median (target ${fmtMs(ev.target)})`), 450);
     bgLevel(Math.min(1, totalLevel() / 60));
   } else {
+    autoLog('strategy', `${SKILL[id].name}: ${SKILL[id].lesson}`, ['math', id], 'gate:' + id);
     s.gate = { type: ev.result, target: ev.target, acc: res.acc, med: res.med, step: 'example', ts: Date.now(), level: L };
     save();
     location.hash = `#/sprint/gate/${id}`;

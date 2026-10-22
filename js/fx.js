@@ -57,7 +57,7 @@ export function pop(el) {
 
 export function stagger(els, opts = {}) {
   if (!G() || reduce || !els.length) return;
-  G().from(els, { y: 14, opacity: 0, duration: 0.45, ease: 'power3.out', stagger: 0.045, clearProps: 'all', ...opts });
+  G().from(els, { y: 14, opacity: 0, duration: 0.45, ease: 'power3.out', stagger: 0.045, clearProps: 'transform,opacity', ...opts });
 }
 
 // Burst of small squares/circles from an element: reward for level-ups and clean rounds.
