@@ -6,6 +6,7 @@ import { COURSE } from './data/courses.js';
 import { FIN_UNITS, DECA } from './data/finance.js';
 import { makeQ } from './math/skills.js';
 import { scenarioQ, PACK } from './math/scenarios.js';
+import { factorQ, TYPE as FTYPE } from './math/factor.js';
 import { shuffle } from './ui.js';
 
 function unitOf(src, cid, uid_) {
@@ -39,6 +40,7 @@ export function buildSet(pool, n) {
 // Recreate a question from its key (for spaced review).
 export function resolveKey(key) {
   const [kind, rest] = [key.slice(0, 1), key.slice(2)];
+  if (key.startsWith('fact:')) { const t = key.split(':')[1]; return FTYPE[t] ? { ...factorQ(t), srs: true } : null; }
   if (key.startsWith('scen:')) { const id = key.split(':')[1]; return PACK[id] ? { ...scenarioQ(id), srs: true } : null; }
   if (key.startsWith('math:')) { const [, skill, L] = key.split(':'); return { ...makeQ(skill, +L, 'free'), key, srs: true }; }
   const [cid, uidv, idx] = rest.split('/');

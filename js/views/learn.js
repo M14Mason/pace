@@ -11,6 +11,7 @@ import { unitPool, buildSet } from '../pool.js';
 import * as fx from '../fx.js';
 import * as cards from './cards.js';
 import * as homework from './homework.js';
+import * as factoring from './factoring.js';
 
 onRoundFinish('learn-math', res => { location.hash = '#/learn'; setTimeout(() => toast(res.acc >= 0.8 ? 'Understanding is solid - now build speed in Sprint.' : 'Missed ones are scheduled for review.', res.acc >= 0.8 ? 'good' : ''), 400); });
 onRoundFinish('interleave', res => { location.hash = '#/learn'; setTimeout(() => toast(`${Math.round(res.acc * 100)}% across mixed topics`), 400); });
@@ -19,6 +20,7 @@ export function render(root, p) {
   if (p[0] === 'math' && SKILL[p[1]]) return mathConcept(root, SKILL[p[1]]);
   if (p[0] === 'cards') return cards.render(root, p.slice(1));
   if (p[0] === 'help') return homework.render(root);
+  if (p[0] === 'factor') return factoring.render(root);
   const due = dueItems(k => !k.startsWith('card:'));
   const misses = (S().missLog || []).slice(0, 8);
   root.append(
@@ -42,7 +44,8 @@ export function render(root, p) {
       h('li', {}, h('b', {}, 'Then speed: '), 'Sprint levels only open with 90% accuracy AND the speed target.'),
       h('li', {}, h('b', {}, 'Spaced + interleaved review, plus reflection '), 'on your own mistakes.'))),
     card('Math: learn the why', h('div', { class: 'stack' }, ...GROUPS.map(g => h('div', {}, h('div', { class: 'small muted', style: { margin: '4px 0 6px', fontWeight: 600 } }, g),
-      h('div', { class: 'pill-row' }, ...SKILLS.filter(s => s.group === g).map(s => h('a', { class: 'btn sm', href: `#/learn/math/${s.id}` }, `${s.icon} ${s.name}`))))))),
+      h('div', { class: 'pill-row' }, ...SKILLS.filter(s => s.group === g).map(s => h('a', { class: 'btn sm', href: `#/learn/math/${s.id}` }, `${s.icon} ${s.name}`))))),
+      h('div', {}, h('div', { class: 'small muted', style: { margin: '4px 0 6px', fontWeight: 600 } }, 'Algebra'), h('a', { class: 'btn sm', href: '#/learn/factor' }, '(x+a)(x+b) Factoring')))),
     card('Reflect on recent mistakes', misses.length ? h('div', { class: 'feedback-rows' }, ...misses.map(m => h('div', {},
       h('div', { class: 'row between' }, h('span', { html: md(m.q.length > 120 ? m.q.slice(0, 120) + '…' : m.q) }), h('button', { class: 'btn sm ghost', onclick: () => reflect(m) }, 'Reflect')),
       h('div', { class: 'small muted' }, `you: ${m.given} · answer: ${m.a}${m.hints > 1 ? ` · needed ${m.hints} hints` : ''}`)))) : h('p', { class: 'empty' }, 'No misses yet. They\'ll show up here after rounds.')));

@@ -174,7 +174,7 @@ export function renderRound(root) {
       if (!q.key) return;
       const a = R.answers[k];
       const grade = hinted.has(k) ? (R.misses.find(m => m.qi === k).hints > 1 ? 0 : 1) : (R.target && a.ms < R.target * 0.7 ? 3 : 2);
-      if (q.srs || (hinted.has(k) && /^(q|g|a|math|scen):/.test(q.key))) srsReview(q.key, grade, q.src || R.area);
+      if (q.srs || (hinted.has(k) && /^(q|g|a|math|scen|fact):/.test(q.key))) srsReview(q.key, grade, q.src || R.area);
     });
     if (R.area === 'math' && R.target) recordSpeed(Math.min(1.2, R.target / Math.max(1, res.med || R.target)));
     recordActivity({ area: R.area, ms: msTotal, q: R.answers.length, correct: res.c || 0, rtSum, req: R.req });
