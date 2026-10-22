@@ -99,7 +99,7 @@ async function route() {
       try { cleanup = await fn(page, (m[1] || '').split('/').filter(Boolean)); }
       catch (e) { console.error(e); page.append(h('div', { class: 'card' }, h('h3', {}, 'Something broke on this page'), h('pre', { class: 'err' }, String(e.stack || e)))); }
       pageIn(page);
-      setTimeout(() => reveal(page), 80);
+      setTimeout(() => page.isConnected && reveal(page), 900); // after pageIn finishes, so its clearProps cannot wipe tilt/reveal state
       bgMood(hash === '#/round' ? 'round' : hash.startsWith('#/records') ? 'records' : ({ '#/': 'home', '#/sprint': 'sprint', '#/learn': 'learn', '#/finance': 'finance', '#/prep': 'prep', '#/speak': 'speak', '#/log': 'log' })[base] || 'home');
       break;
     }
