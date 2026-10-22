@@ -10,6 +10,7 @@ import { unitReadiness, lessonKey } from '../data/courses.js';
 import { hasAI, gradeMemo, judgeRoleplay, annotateArticle, aiErrorText } from '../ai.js';
 import { dictate } from './speak.js';
 import * as market from './market.js';
+import { renderReading } from './reading.js';
 import * as fx from '../fx.js';
 
 export const FINC = { id: 'fin', name: 'Business & Finance', short: 'Finance', src: 'fin', units: FIN_UNITS };
@@ -22,6 +23,7 @@ export function render(root, p) {
   const disc = h('div', { class: 'disclaimer', style: { marginBottom: '12px' } }, DISCLAIMER);
   if (p[0] === 'unit') {
     const u = FIN_UNITS.find(x => x.id === p[1]); if (!u) return (location.hash = '#/finance');
+    if (p[2] === 'read') return renderReading(root, { c: FINC, u, back: `#/finance/unit/${u.id}`, area: 'finance', tags: ['finance', u.id] });
     if (p[2] === 'lesson') { const l = u.lessons.find(x => x.id === p[3]); return renderLesson(root, { lesson: l, key: lessonKey(FINC, u, l), back: `#/finance/unit/${u.id}`, title: 'Business & Finance', sub: u.t, check: buildSet(unitPool(FINC, u, 'fin'), 3), area: 'finance', tags: ['finance', u.id] }); }
     root.append(disc);
     return renderUnit(root, { c: FINC, u, base: `#/finance/unit/${u.id}`, back: '#/finance', area: 'finance', label: 'Finance' });
@@ -146,6 +148,7 @@ function annotateNew(root) {
 function deca(root, p) {
   if (p[0]) {
     const cl = DECA.clusters.find(x => x.id === p[0]); if (!cl) return (location.hash = '#/finance/deca');
+    if (p[1] === 'read') return renderReading(root, { c: DECAC, u: cl, back: `#/finance/deca/${cl.id}`, area: 'deca', tags: ['deca', cl.id] });
     if (p[1] === 'lesson') { const l = cl.lessons[0]; return renderLesson(root, { lesson: l, key: lessonKey(DECAC, cl, l), back: `#/finance/deca/${cl.id}`, title: 'DECA', sub: cl.t, check: buildSet(unitPool(DECAC, cl, 'deca'), 3), area: 'deca', tags: ['deca', cl.id] }); }
     if (p[1] === 'roleplay') return roleplay(root, cl, cl.roleplays.find(r => r.id === p[2]));
     root.append(h('div', { class: 'disclaimer', style: { marginBottom: '12px' } }, DECA.note));

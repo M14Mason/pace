@@ -40,7 +40,8 @@ export function unitReadiness(c, u) {
   const pool = (u.qs || []).length + (u.gen ? 8 : 0) + ((st.aiBank[`${c.id}/${u.id}`] || []).length);
   const coverage = Math.min(1, seen / Math.max(6, pool));
   const acc = seen ? right / seen : 0;
-  return 0.4 * lessonPart + 0.6 * acc * coverage;
+  const readPart = (st.readDone || {})[`${c.id}/${u.id}`] ? 1 : 0;
+  return 0.25 * readPart + 0.2 * lessonPart + 0.55 * acc * coverage;
 }
 export function courseReadiness(c) {
   const us = c.units.map(u => unitReadiness(c, u));

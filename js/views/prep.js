@@ -5,6 +5,7 @@ import { h, card, ring, bar, pct, toast, modal } from '../ui.js';
 import { COURSE, byPriority, courseReadiness, unitReadiness, termOf, termStart, daysUntilStart, TERM_LABEL, lessonKey } from '../data/courses.js';
 import { renderUnit, frqCard } from '../unitview.js';
 import { renderLesson } from '../lesson.js';
+import { renderReading } from './reading.js';
 import { unitPool, buildSet, resolveKey } from '../pool.js';
 import { startRound } from '../quiz.js';
 import { scheduleReminders } from '../ntfy.js';
@@ -21,6 +22,7 @@ export function render(root, p) {
     if (!l) return (location.hash = `#/prep/${c.id}`);
     return renderLesson(root, { lesson: l, key: lessonKey(c, u, l), back: `#/prep/${c.id}/${u.id}`, title: c.name, sub: `${c.short} · ${u.t}`, check: buildSet(unitPool(c, u), 3), area: areaOf(c), req: reqOf(c), tags: [c.id, u.id] });
   }
+  if (p[1] && p[2] === 'read') { const u = c.units.find(x => x.id === p[1]); if (u) return renderReading(root, { c, u, back: `#/prep/${c.id}/${u.id}`, area: areaOf(c), tags: [c.id, u.id] }); }
   if (p[1]) {
     const u = c.units.find(x => x.id === p[1]);
     if (!u) return (location.hash = `#/prep/${c.id}`);

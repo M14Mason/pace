@@ -120,6 +120,9 @@ export function mergeShared(L, R) {
   perKey('memos', (a, b) => newest(a, b));
   perKey('aiBank', (a, b) => byId(a, b, deleted).reverse());
   perKey('courseTerms', (a, b) => a || b);
+  perKey('readDone', (a, b) => Math.max(a || 0, b || 0) || undefined);
+  perKey('marks', (a, b) => newest(a, b));
+  perKey('summaries', (a, b) => (a && b ? (a.length >= b.length ? a : b) : a || b));
   perKey('aiUsage', (a, b) => newest(a, b, x => x?.updatedAt || 0)); // one entry per device
   return out;
 }

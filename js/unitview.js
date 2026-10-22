@@ -6,6 +6,7 @@ import { unitPool, buildSet, addAIQuestions } from './pool.js';
 import { hasAI, genQuestions, gradeFRQ, aiErrorText } from './ai.js';
 import { unitReadiness, lessonKey } from './data/courses.js';
 import * as fx from './fx.js';
+import { readDone } from './views/reading.js';
 
 ['unit-practice', 'unit-test', 'course-mixed', 'review'].forEach(k => onRoundFinish(k, res => {
   location.hash = res.meta.back || '#/';
@@ -34,14 +35,20 @@ export function renderUnit(root, { c, u, base, back, area, req, label }) {
       root.innerHTML = ''; renderUnit(root, { c, u, base, back, area, req, label });
     } catch (e) { toast(aiErrorText(e), 'bad'); genBtn.disabled = false; genBtn.textContent = '✦ Generate 8 more with Claude'; }
   };
+  const read = readDone(c, u);
+  const lock = h('p', { class: 'small muted' }, '🔒 Practice unlocks after you read the unit. Learn it first, then test it.');
   const frqs = [...(u.frq || []), ...((c.frqTemplates || []).filter(() => u === c.units[0]))];
   root.append(
     h('div', { class: 'page-head' }, h('div', {}, h('a', { href: back, class: 'muted small' }, '← Back'), h('h1', {}, u.t), h('div', { class: 'sub' }, u.topics || ''))),
+    h('a', { class: `card ${read ? '' : 'accent'}`, href: `${base}/read`, style: { display: 'block', textDecoration: 'none', marginBottom: '12px' } },
+      h('div', { class: 'row between' }, h('h3', { style: { fontSize: '17px' } }, read ? '✓ Read & annotate' : 'Step 1 · Read & annotate'), h('span', { class: `chip ${read ? 'good' : ''}` }, read ? 'done - reread anytime' : '≈ 8-12 min')),
+      h('div', { class: 'small', style: { marginTop: '6px', opacity: .85 } }, 'The why → teaching sections with notes and worked examples → recall checks → your summary. Highlight as you go.')),
     h('div', { class: 'grid g2' },
       card('Unit readiness', h('div', { class: 'stack' }, h('div', { class: 'kpi-v' }, pct(r)), bar(r, { cls: r > 0.75 ? 'good' : '' }), h('div', { class: 'small muted' }, `${(u.lessons || []).length} lesson(s) · ${fixedCount} bank questions${u.gen ? ' + endless generated practice' : ''}`))),
-      card('Practice', h('div', { class: 'stack' },
-        h('button', { class: 'btn primary wide', onclick: () => run('unit-practice', 8, 0) }, 'Practice · 8 questions'),
-        h('button', { class: 'btn wide', onclick: () => run('unit-test', Math.min(15, Math.max(8, fixedCount + (u.gen ? 6 : 0))), c.ap ? 60000 : 50000) }, `Timed unit test · ${c.ap ? '60s' : '50s'}/question pace`),
+      card(read ? 'Step 2 · Practice' : 'Practice', h('div', { class: 'stack' },
+        read ? null : lock,
+        h('button', { class: 'btn primary wide', disabled: !read, onclick: () => run('unit-practice', 8, 0) }, 'Practice · 8 questions'),
+        h('button', { class: 'btn wide', disabled: !read, onclick: () => run('unit-test', Math.min(15, Math.max(8, fixedCount + (u.gen ? 6 : 0))), c.ap ? 60000 : 50000) }, `Timed unit test · ${c.ap ? '60s' : '50s'}/question pace`),
         genBtn))),
     card('Lessons', h('div', { class: 'unit-list' }, ...(u.lessons || []).map((l, i) => {
       const k = lessonKey(c, u, l); const d = S().lessons[k];
