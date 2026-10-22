@@ -1,6 +1,6 @@
 // Log: tips, mistakes, formulas, strategies, reflections. Tagged entries resurface
 // automatically during practice of the same skill/course.
-import { S, save, uid } from '../store.js';
+import { S, save, uid, removeById } from '../store.js';
 import { h, card, toast, seg } from '../ui.js';
 import { COURSES } from '../data/courses.js';
 import { SKILLS } from '../math/skills.js';
@@ -32,7 +32,7 @@ export function render(root) {
       h('div', { class: 'row between' }, h('span', { class: `lt ${e.type}` }, e.type), h('span', { class: 'small muted' }, new Date(e.ts).toLocaleDateString())),
       h('div', { class: 'log-text' }, e.text),
       h('div', { class: 'row between' }, h('div', { class: 'pill-row' }, ...(e.tags || []).map(t => h('span', { class: 'chip' }, TAGNAME[t] || t))),
-        h('button', { class: 'btn sm ghost', onclick: () => { if (!confirm('Delete this entry?')) return; st.log = st.log.filter(x => x.id !== e.id); save(); draw(); } }, 'Delete')))));
+        h('button', { class: 'btn sm ghost', onclick: () => { if (!confirm('Delete this entry?')) return; removeById('log', e.id); draw(); } }, 'Delete')))));
   }
   root.append(
     h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Log'), h('div', { class: 'sub' }, `${st.log.length} entries · tagged entries pop up during matching practice`))),

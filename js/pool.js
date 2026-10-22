@@ -5,6 +5,7 @@ import { fromBank } from './quiz.js';
 import { COURSE } from './data/courses.js';
 import { FIN_UNITS, DECA } from './data/finance.js';
 import { makeQ } from './math/skills.js';
+import { scenarioQ, PACK } from './math/scenarios.js';
 import { shuffle } from './ui.js';
 
 function unitOf(src, cid, uid_) {
@@ -38,8 +39,10 @@ export function buildSet(pool, n) {
 // Recreate a question from its key (for spaced review).
 export function resolveKey(key) {
   const [kind, rest] = [key.slice(0, 1), key.slice(2)];
+  if (key.startsWith('scen:')) { const id = key.split(':')[1]; return PACK[id] ? { ...scenarioQ(id), srs: true } : null; }
   if (key.startsWith('math:')) { const [, skill, L] = key.split(':'); return { ...makeQ(skill, +L, 'free'), key, srs: true }; }
   const [cid, uidv, idx] = rest.split('/');
+  if (kind === 'a') { const b = (S().aiBank[`${cid}/${uidv}`] || [])[idx]; if (b) return { ...fromBank(b, key), srs: true, src: cid }; }
   const src = cid === 'fin' ? 'fin' : cid === 'deca' ? 'deca' : 'course';
   const u = unitOf(src, cid, uidv);
   if (!u) return null;

@@ -1,7 +1,7 @@
 // Speak: articulation training. Record -> live transcript -> local delivery metrics
 // (pace, pauses, pitch/volume variation, fillers, hedges, vague words, repetition) ->
 // Claude analysis of wording -> "say it sharper" drills built from your own sentences.
-import { S, save, uid, audioDB, recordActivity } from '../store.js';
+import { S, save, uid, audioDB, recordActivity, addRecord } from '../store.js';
 import { h, card, toast, pct, svg, fmtMs } from '../ui.js';
 import { hasAI, analyzeSpeech, checkDrill, aiErrorText } from '../ai.js';
 import * as fx from '../fx.js';
@@ -245,6 +245,7 @@ async function finishSession(out, prompt, lang, results, transcriptEl) {
   results.append(loading);
   try {
     const ai = await analyzeSpeech({ prompt: prompt[1], transcript: text, metrics: m, lang });
+    const avg = avgScore(ai.scores); if (avg > Math.max(0, ...S().speak.filter(x => x.ai && x !== sess).map(x => avgScore(x.ai.scores)))) addRecord('score', `Speak: ${avg}/10 articulation`, avg / 10);
     sess.ai = ai; save();
     loading.replaceWith(aiCard(ai, lang));
     fx.stagger([...results.querySelectorAll('.card')]);

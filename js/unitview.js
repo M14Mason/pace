@@ -68,6 +68,8 @@ export function frqCard(c, f, area, req) {
         h('div', { class: 'feedback-rows' }, ...g.rows.map(r => h('div', {}, h('div', { class: 'row' }, h('span', { class: `chip ${r.earned ? 'good' : 'bad'}` }, r.earned ? '✓' : '✗'), h('b', {}, r.criterion)), h('p', { class: 'small' }, r.why), r.quote ? h('div', { class: 'q-quote small' }, r.quote) : null))),
         h('div', { class: 'hint' }, h('b', {}, 'Top fix'), g.topFix), h('div', { class: 'hint worked' }, h('b', {}, 'Stronger version'), h('p', {}, g.rewrite)), h('p', { class: 'small muted' }, g.encouragement));
       fx.stagger([...out.children]);
+      const prevBest = Math.max(0, ...(S().frqLog || []).filter(x => x.course === c.id && x.kind === f.kind).map(x => x.earned / x.max));
+      if (g.earned / g.max > prevBest) import('./store.js').then(m => m.addRecord('score', `${c.short} ${f.kind}: ${g.earned}/${g.max}`, g.earned / g.max));
       S().frqLog = [{ course: c.id, kind: f.kind, earned: g.earned, max: g.max, ts: Date.now() }, ...(S().frqLog || [])].slice(0, 100);
       import('./store.js').then(m => m.recordActivity({ area, ms: t0 ? Date.now() - t0 : 15 * 60000, q: 0, correct: 0, req }));
       save();

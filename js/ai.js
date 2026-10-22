@@ -24,6 +24,7 @@ How this student learns best: a concise worked example first, then a hint (not t
 Investing content is education and simulated practice, never personal financial advice.`;
 
 // Ask for JSON that matches `schema`. Returns the parsed object.
+// `prompt` may be a string or a content-block array (text + images).
 export async function askJSON(prompt, schema, { effort = 'medium', maxTokens = 8000 } = {}) {
   const c = await client();
   const res = await c.beta.messages.create({
@@ -134,4 +135,82 @@ export function gradeMemo({ caseTitle, caseText, task, response }) {
   return askJSON(
     `Business case: ${caseTitle}\n${caseText}\nTask: ${task}\nStudent memo/answer:\n${response}\nGrade like a case-competition judge: recommendation clarity, use of numbers/evidence, risks considered, structure, and professionalism (each 0-10). Give the strongest improvement and an example opening line for a better memo.`,
     obj({ scores: arr(obj({ area: str, score: int, why: str })), overall: int, improvement: str, betterOpening: str }), { effort: 'high' });
+}
+
+// ---- images (homework photos, notes) ----
+// Downscale a photo to <= 1568px on the long side and return a base64 JPEG content block.
+export async function imageBlock(file) {
+  const img = await createImageBitmap(file);
+  const scale = Math.min(1, 1568 / Math.max(img.width, img.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  const data = c.toDataURL('image/jpeg', 0.85).split(',')[1];
+  img.close && img.close();
+  return { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } };
+}
+const withImage = (text, image) => (image ? [image, { type: 'text', text }] : text);
+
+export function cardsFromNotes({ text, image, deck }) {
+  return askJSON(withImage(
+    `Turn ${image ? 'these class notes (photo above)' : 'these notes'} into high-quality flashcards for spaced repetition${deck ? ` for the deck "${deck}"` : ''}.
+Rules: one fact or idea per card; fronts are questions or cues (not just a word when a question works better); backs are short (under 25 words) and exact; include the "why" on concept cards; cover every important term, date, formula and cause/effect; skip filler. 8-30 cards depending on content.${text ? `\n\nNOTES:\n"""${text.slice(0, 15000)}"""` : ''}`, image),
+    obj({ deck: str, cards: arr(obj({ front: str, back: str })) }), { effort: 'medium', maxTokens: 12000 });
+}
+
+export function homeworkHelp({ text, image, subject }) {
+  return askJSON(withImage(
+    `A student needs help with a ${subject} homework problem${image ? ' (photo above)' : ''}. They learn best like this: understand the why, then a worked path broken into small steps, with a HINT before any answer. Do NOT just give the final answer up front.
+${text ? `PROBLEM / WHERE THEY ARE STUCK:\n"""${text.slice(0, 6000)}"""\n` : ''}
+Return:
+- problem: the problem transcribed cleanly (if a photo, read it carefully; if several problems, pick the first unless the text says which).
+- concept: the core idea in 1-2 sentences ("why this works").
+- steps: 3-7 small steps. For each: "ask" = a question prompting the student to do this step themself; "hint" = a nudge that doesn't give it away; "result" = the correct result of that step with a one-line reason.
+- final: the final answer.
+- keyIdea: one reusable tip/formula worth saving.
+- similar: exactly 3 new practice problems on the same skill, slightly varied, each multiple choice with 4 choices (index "a" of the correct one), a short explanation "e", and two hints "h".${subject === 'Spanish' ? ' For Spanish, problems can be conjugation/translation/sentence completion.' : ''}`, image),
+    obj({ problem: str, concept: str, steps: arr(obj({ ask: str, hint: str, result: str })), final: str, keyIdea: str, similar: arr(obj({ q: str, c: arr(str), a: int, e: str, h: arr(str) })) }), { effort: 'high', maxTokens: 16000 });
+}
+
+// ---- live web data (market brief, real companies) ----
+// Uses Claude's server-side web search. Structured-output mode can't be combined with
+// search citations, so the JSON comes back as the final text block and is parsed here.
+export async function askWeb(prompt, { effort = 'medium', maxTokens = 16000, maxSearches = 6 } = {}) {
+  const c = await client();
+  const messages = [{ role: 'user', content: prompt + '\n\nAfter researching, reply with ONLY one JSON object (no prose, no code fence) matching the requested shape.' }];
+  for (let turn = 0; turn < 4; turn++) {
+    const res = await c.beta.messages.create({
+      model: MODEL, max_tokens: maxTokens, system: SYSTEM,
+      betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default',
+      output_config: { effort },
+      tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: maxSearches }],
+      messages,
+    });
+    if (res.stop_reason === 'refusal') throw new Error('Claude declined this request.');
+    if (res.stop_reason === 'pause_turn') { messages.push({ role: 'assistant', content: res.content }); continue; }
+    const text = res.content.filter(b => b.type === 'text').map(b => b.text).join('');
+    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+    const raw = fenced ? fenced[1] : text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
+    try { return JSON.parse(raw); } catch { throw new Error('Couldn\'t read Claude\'s answer - try again.'); }
+  }
+  throw new Error('The search took too long - try again.');
+}
+
+export function marketBrief(focus) {
+  return askWeb(`Today is ${new Date().toDateString()}. Build a 2-minute market brief for a high-school student learning finance (aiming for a wealth-management internship). Search for the most recent U.S. market session and major business news${focus ? `, with extra attention to: ${focus}` : ''}.
+Shape: {"asOf": string date of the session covered, "headline": string, "sections": [{"title": string, "body": 2-4 plain sentences on what moved and WHY, "concept": the finance concept it illustrates}] (3-5 sections: indexes/rates, 1-2 notable companies/earnings, macro/Fed/data, one wildcard), "concepts": [{"term": string, "explain": one clear sentence, "example": from today's news}] (4-6), "questions": [{"q": string, "c": [4 strings], "a": index of correct, "e": why, "h": [2 hints]}] (5 questions that test the CONCEPTS using today's examples, not trivia like exact prices)}.
+Education only - no buy/sell advice.`, { effort: 'medium', maxSearches: 6 });
+}
+
+export function analyzeCompany(ticker) {
+  return askWeb(`Find the most recent quarterly AND annual results for the public company with ticker "${ticker}" (latest 10-Q/10-K or earnings release) and its approximate current share price.
+Shape: {"company": string, "ticker": string, "asOf": string, "source": string (where the numbers came from), "price": number, "facts": [{"label": string, "value": string, "note": string}] (8-12 items: revenue (latest FY and prior FY), gross margin, operating income, net income, diluted EPS (TTM), shares outstanding, cash, total debt, free cash flow, revenue growth %), "story": 3-4 sentences on what drives the business and the latest quarter, "questions": [{"q": string, "c": [4 strings], "a": index, "e": worked calculation or reasoning, "h": [2 hints]}] (6 questions computing or interpreting real metrics: P/E from price and EPS, margins, growth rate, net cash, what the trend suggests), "thinkAbout": [3 open analyst questions]}.
+Use real reported numbers; round sensibly; say in source if any number is estimated. Education only, not advice.`, { effort: 'high', maxSearches: 8 });
+}
+
+export function gradePitch({ pitch, ticker }) {
+  return askJSON(`Grade this stock pitch on ${ticker} like a competition judge AND an internship interviewer. Educational exercise.
+PITCH:\n${JSON.stringify(pitch, null, 2)}
+Score 0-10: thesis clarity, evidence & numbers, valuation reasoning, catalysts, risks & mitigants, structure/persuasiveness. Point out any claim that needs support. Give the single biggest improvement and a sharper 2-sentence opening hook.`,
+    obj({ scores: arr(obj({ area: str, score: int, why: str })), overall: int, unsupported: arr(str), improvement: str, hook: str }), { effort: 'high' });
 }

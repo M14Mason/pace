@@ -1,10 +1,11 @@
 // Math Sprint: skill levels, timed rounds, and the accuracy + speed gate.
-import { S, save } from '../store.js';
+import { S, save, addRecord } from '../store.js';
 import { h, card, bar, fmtMs, pct, modal, seg, md, shuffle, pick, toast } from '../ui.js';
 import { SKILLS, SKILL, GROUPS, makeQ, evaluateRound, fmtAns } from '../math/skills.js';
 import { startRound, onRoundFinish, relevantTips } from '../quiz.js';
 import * as fx from '../fx.js';
 import { bgLevel } from '../three-bg.js';
+import { PACKS, PACK, scenarioQ } from '../math/scenarios.js';
 
 export const sk = id => (S().skills[id] ||= { level: 1, rounds: [], gate: null, best: {} });
 const prefs = () => (S().sprintPrefs ||= { mode: 'mixed', len: 10 });
@@ -49,10 +50,11 @@ onRoundFinish('sprint-test', res => {
   const ev = evaluateRound(id, L, res.acc, res.med);
   s.rounds.push({ acc: res.acc, med: res.med, ts: Date.now(), level: L, test: true });
   const pb = s.best[L];
-  if (res.acc >= 0.9 && (!pb || res.med < pb)) { s.best[L] = res.med; if (pb) setTimeout(() => toast(`Personal best: ${fmtMs(res.med)} median at L${L}`, 'good'), 2300); }
+  if (res.acc >= 0.9 && (!pb || res.med < pb)) { s.best[L] = res.med; addRecord('speed', `${SKILL[id].name} L${L}: ${fmtMs(res.med)} median`, res.med); if (pb) setTimeout(() => toast(`Personal best: ${fmtMs(res.med)} median at L${L}`, 'good'), 2300); }
   if (ev.result === 'advance') {
     s.gate = null;
     if (L < 8) s.level = L + 1;
+    addRecord('level', `${SKILL[id].name} reached Level ${Math.min(8, L + 1)}`, L + 1);
     save();
     location.hash = '#/sprint';
     setTimeout(() => fx.levelUp(L < 8 ? `${SKILL[id].name} → Level ${L + 1}` : `${SKILL[id].name} mastered`, `${pct(res.acc)} at ${fmtMs(res.med)} median (target ${fmtMs(ev.target)})`), 450);
@@ -84,6 +86,15 @@ onRoundFinish('sprint-daily', res => {
   if (res.acc === 1) setTimeout(() => toast('Clean sprint. 12 for 12.', 'good'), 500);
 });
 
+function startScenario(id) {
+  startRound({ kind: 'scenario', meta: { pack: id }, title: PACK[id].name, questions: Array.from({ length: 8 }, () => scenarioQ(id)), target: 30000, area: 'math', req: 'math', tags: ['math', 'scen', id] });
+}
+onRoundFinish('scenario', res => {
+  const best = (S().scenBest ||= {})[res.meta.pack];
+  if (!best || res.acc > best.acc || (res.acc === best.acc && res.med < best.med)) { S().scenBest[res.meta.pack] = { acc: res.acc, med: res.med, ts: Date.now() }; addRecord('speed', `${PACK[res.meta.pack].name}: ${pct(res.acc)} at ${fmtMs(res.med)}`, res.med); if (best) setTimeout(() => toast(`New best on ${PACK[res.meta.pack].name}`, 'good'), 500); }
+  save(); location.hash = '#/sprint';
+});
+
 export const totalLevel = () => SKILLS.reduce((a, s) => a + sk(s.id).level, 0);
 
 export function render(root, params) {
@@ -101,6 +112,10 @@ export function render(root, params) {
         h('div', { class: 'row between' }, h('span', {}, 'Answer style'), seg([{ label: 'Keypad', value: 'free' }, { label: 'Mixed', value: 'mixed' }, { label: 'Choices', value: 'mc' }], p.mode, v => { p.mode = v; save(); })),
         h('div', { class: 'row between' }, h('span', {}, 'Level-test length'), seg([{ label: '10', value: 10 }, { label: '15', value: 15 }, { label: '20', value: 20 }], p.len, v => { p.len = v; save(); })),
         h('p', { class: 'small muted' }, 'Keyboard works too: type the number, Enter to submit, 1-4 for choices.')))),
+    h('h3', { class: 'muted', style: { margin: '20px 4px 10px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.07em' } }, 'Real-life scenarios'),
+    h('div', { class: 'grid g2' }, ...PACKS.map(p => { const b = (S().scenBest || {})[p.id]; return h('button', { class: 'tile', onclick: () => startScenario(p.id) },
+      h('div', { class: 'tile-top' }, h('div', { class: 'tile-ic' }, p.icon), b ? h('span', { class: 'chip good' }, `best ${pct(b.acc)} · ${fmtMs(b.med)}`) : h('span', { class: 'chip' }, '8 questions')),
+      h('h4', {}, p.name), h('div', { class: 'muted' }, p.desc)); })),
     ...GROUPS.map(g => h('div', {},
       h('h3', { class: 'muted', style: { margin: '20px 4px 10px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.07em' } }, g),
       h('div', { class: 'grid g3' }, ...SKILLS.filter(s => s.group === g).map(skillTile)))));

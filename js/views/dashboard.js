@@ -1,11 +1,13 @@
 // Dashboard: today's plan, Pace Score, streaks, stats over time, calendar, heatmap.
-import { S, save, today, day, dayDone, weekStart, weekCount, weekStreak, dayStreak, paceScore, rangeStats, dueItems, addDays, daysBetween } from '../store.js';
+import { S, save, snapshotReadiness, today, day, dayDone, weekStart, weekCount, weekStreak, dayStreak, paceScore, rangeStats, dueItems, addDays, daysBetween } from '../store.js';
 import { h, card, ring, bar, pct, fmtMs, fmtMin, heatmap, calendar, lineChart, scoreSeries, weekBoard, countUp, modal } from '../ui.js';
 import { skyline } from '../three-bg.js';
 import { COURSES, byPriority, courseReadiness, COURSE } from '../data/courses.js';
-import { startDaily, gatedSkills, totalLevel } from './sprint.js';
+import { startDaily, gatedSkills, totalLevel, dailyQuestions } from './sprint.js';
 import { resolveKey } from '../pool.js';
-import { startRound } from '../quiz.js';
+import { startRound, onRoundFinish } from '../quiz.js';
+import { unitPool, buildSet } from '../pool.js';
+import { toast } from '../ui.js';
 import { relevantTips } from '../quiz.js';
 import { hasAI } from '../ai.js';
 
@@ -14,7 +16,7 @@ export function todaysPlan() {
   const ap = byPriority().find(c => c.ap);
   const nextUnit = ap.units.find(u => !u.lessons.every(l => S().lessons[`${ap.id}/${u.id}/${l.id}`]?.done)) || ap.units[0];
   const nextLesson = nextUnit.lessons.find(l => !S().lessons[`${ap.id}/${nextUnit.id}/${l.id}`]?.done);
-  const due = dueItems();
+  const due = dueItems(k => !k.startsWith('card:'));
   const gated = gatedSkills();
   const term2 = byPriority().filter(c => !c.ap && (c.term === '10-T2' || c.id === 'math3')).slice(0, 3);
   const items = [
@@ -34,6 +36,25 @@ export function reviewRound(due) {
   startRound({ kind: 'review', meta: { back: '#/' }, title: 'Spaced review', questions: qs, area: 'review', req: qs.some(q => isAP(q.key)) ? 'ap' : null, tags: ['review'] });
 }
 
+// Tired-day minimum: 6 sprint questions + 4 AP questions, about 5 minutes. Counts as a required day.
+export function startMinimumDay() {
+  const ap = byPriority().find(c => c.ap);
+  const due = dueItems(k => k.includes(`:${ap.id}/`)).map(i => resolveKey(i.key)).filter(Boolean).slice(0, 4);
+  const unit = ap.units.find(u => u.lessons.some(l => S().lessons[`${ap.id}/${u.id}/${l.id}`]?.done)) || ap.units[0];
+  const apQs = [...due, ...buildSet(unitPool(ap, unit), 4 - due.length)].slice(0, 4);
+  const qs = [...dailyQuestions(6), ...apQs];
+  startRound({ kind: 'min-day', meta: { back: '#/' }, title: '5-minute minimum', questions: qs, target: 0, area: 'math', req: 'min', tags: ['math', ap.id] });
+}
+onRoundFinish('min-day', () => { location.hash = '#/'; setTimeout(() => toast('Minimum day done - it counts. Rest up.', 'good'), 400); });
+
+// One tap: whatever is next.
+export function continueNext() {
+  if (S().activeRound) return (location.hash = '#/round');
+  const next = todaysPlan().find(p => !p.done);
+  if (!next) return toast('Everything for today is done. Bonus: Speak or a Finance case.');
+  next.go ? next.go() : (location.hash = next.href);
+}
+
 export function render(root) {
   const st = S(), d = day(), score = paceScore();
   const ws = weekStart(), wc = weekCount(ws), goal = st.profile.weeklyGoal;
@@ -50,17 +71,21 @@ export function render(root) {
 
   const tips = relevantTips(['math', 'apwh', 'finance', 'speak']).slice(0, 1);
   const sky = h('div', { class: 'skyline' });
+  if (!(st.readinessLog || {})[today()]) snapshotReadiness(Object.fromEntries(COURSES.map(c => [c.id, Math.round(courseReadiness(c) * 1000) / 1000])));
 
   root.append(
     h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, `${greeting}${st.profile.name ? ', ' + st.profile.name : ''}`), h('div', { class: 'sub' }, new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }))),
-      h('a', { class: 'icon-btn', href: '#/settings', title: 'Settings', html: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>' })),
+      h('div', { class: 'row' }, h('a', { class: 'btn sm', href: '#/records' }, '🏆 Records'), h('a', { class: 'icon-btn', href: '#/settings', title: 'Settings', html: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>' }))),
     resume ? h('a', { class: 'card gate', href: '#/round', style: { display: 'block', textDecoration: 'none', marginBottom: '12px' } }, h('h3', {}, `Finish your round: ${resume.title}`), h('div', { class: 'small' }, 'Rounds only count once you clear every miss.')) : null,
+    h('div', { class: 'row', style: { marginBottom: '12px' } },
+      h('button', { class: 'btn primary', style: { flex: 2, minHeight: '54px', fontSize: '16px' }, onclick: continueNext }, resume ? '▶ Resume round' : dayDone(d) ? '▶ Keep going' : '▶ Continue'),
+      dayDone(d) ? null : h('button', { class: 'btn', style: { flex: 1, minHeight: '54px' }, onclick: startMinimumDay, title: '6 math + 4 AP questions, counts as a required day' }, 'Tired? 5 min')),
     !st.profile.placementDone ? h('a', { class: 'card accent', href: '#/placement', style: { display: 'block', textDecoration: 'none', marginBottom: '12px' } }, h('h3', {}, 'Take the placement test (≈ 6 min)'), h('div', { class: 'small muted' }, 'Sets your starting levels and shapes your plan.')) : null,
     h('div', { class: 'grid g2' },
       card('Today', h('div', { class: 'hero' }, scoreRing, h('div', { class: 'hero-text stack' },
         h('div', {}, h('div', { class: 'kpi-l' }, 'This week'), h('div', { class: 'kpi-v' }, `${wc}/${goal}`, h('span', { class: 'small muted' }, ' required days')), bar(wc / goal, { cls: wc >= goal ? 'good' : '' })),
         h('div', { class: 'row' }, h('span', { class: 'chip gold' }, `🔥 ${weekStreak()} wk streak`), h('span', { class: 'chip' }, `${dayStreak()} day run`)),
-        h('div', { class: 'small muted' }, dayDone(d) ? 'Required work done today ✓' : `${d.req.math ? '✓' : '○'} Math  ${d.req.ap ? '✓' : '○'} AP`)))),
+        h('div', { class: 'small muted' }, dayDone(d) ? (d.req.min && !(d.req.math && d.req.ap) ? 'Minimum day done ✓' : 'Required work done today ✓') : `${d.req.math ? '✓' : '○'} Math  ${d.req.ap ? '✓' : '○'} AP`)))),
       card("Today's plan", h('div', { class: 'plan' }, ...plan.map(p => {
         const el = h(p.href ? 'a' : 'button', { class: `plan-item${p.done ? ' done' : ''}`, href: p.href, onclick: p.go, style: { width: '100%', textAlign: 'left' } },
           h('span', { class: 'check' }, '✓'), h('div', { class: 'pi-body' }, h('div', { class: 'pi-t' }, p.t), h('div', { class: 'pi-s' }, p.s)),

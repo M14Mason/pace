@@ -4,6 +4,7 @@ import { pageIn, pageOut } from './fx.js';
 import { initBackground } from './three-bg.js';
 import { renderRound, unbindKeys } from './quiz.js';
 import { scheduleReminders } from './ntfy.js';
+import { startAutoSync } from './sync.js';
 import * as dashboard from './views/dashboard.js';
 import * as sprint from './views/sprint.js';
 import * as learn from './views/learn.js';
@@ -13,6 +14,7 @@ import * as log from './views/log.js';
 import * as speak from './views/speak.js';
 import * as settings from './views/settings.js';
 import * as placement from './views/placement.js';
+import * as records from './views/records.js';
 
 const ICON = {
   home: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
@@ -47,6 +49,7 @@ const routes = [
   [/^#\/speak(?:\/(.*))?$/, speak.render],
   [/^#\/settings$/, settings.render],
   [/^#\/placement$/, placement.render],
+  [/^#\/records$/, records.render],
   [/^#\/round$/, root => renderRound(root)],
 ];
 
@@ -86,6 +89,7 @@ initBackground($('#bg'));
 if (!S().profile.placementDone && !location.hash) location.hash = '#/placement';
 route();
 scheduleReminders();
+startAutoSync();
 addEventListener('online', scheduleReminders);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) scheduleReminders(); });
 

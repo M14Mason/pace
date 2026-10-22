@@ -17,7 +17,11 @@ const blank = () => ({
     terms: { '10-T2': '2027-01-25', '11-T1': '2027-08-23', '11-T2': '2028-01-24', '12-T1': '2028-08-21', '12-T2': '2029-01-22' },
     math3Term: '10-T2',
   },
-  days: {},        // 'YYYY-MM-DD' -> { ms, q, correct, rt, req: {math, ap}, areas: {} }
+  days: {},        // merged view across devices: 'YYYY-MM-DD' -> { ms, q, correct, rt, req: {math, ap, min}, areas: {} }
+  myDays: null,    // this device's own days (what sync uploads for this device)
+  remoteDays: {},  // deviceId -> days from other linked devices
+  deleted: {},     // id -> ts tombstones so deletions survive sync merges
+  cards: [],       // flashcards { id, deck, front, back, src, ts }
   skills: {},      // math skill id -> { level, rounds: [{acc, med, ts, level}], gate }
   srs: {},         // item key -> { due, ivl, ease, reps, lapses, src }
   lessons: {},     // lesson id -> { done, score, ts }
@@ -36,6 +40,7 @@ let state;
 try { state = Object.assign(blank(), JSON.parse(localStorage.getItem(KEY) || 'null') || {}); }
 catch { state = blank(); }
 state.profile = Object.assign(blank().profile, state.profile);
+if (!state.myDays) state.myDays = JSON.parse(JSON.stringify(state.days || {})); // data before sync belongs to this device
 
 const subs = new Set();
 let saveTimer;
@@ -61,9 +66,18 @@ export async function importData(file) {
   const data = JSON.parse(await file.text());
   if (!data || data.v !== 1) throw new Error('Not a Pace backup');
   state = Object.assign(blank(), data);
+  if (!state.myDays) state.myDays = JSON.parse(JSON.stringify(state.days || {}));
   save();
 }
-export function resetAll() { state = blank(); save(); }
+export function resetAll() { state = blank(); state.myDays = {}; save(); }
+export function replaceState(next) { state = next; save(); }
+
+// Remove an item from a list and leave a tombstone so sync doesn't resurrect it.
+export function removeById(list, id) {
+  state[list] = (state[list] || []).filter(x => x.id !== id);
+  state.deleted[id] = Date.now();
+  save();
+}
 
 // ---------- dates ----------
 export const dkey = d => {
@@ -74,16 +88,39 @@ export const today = () => dkey(Date.now());
 export const addDays = (k, n) => { const d = new Date(k + 'T12:00'); d.setDate(d.getDate() + n); return dkey(d); };
 export const daysBetween = (a, b) => Math.round((new Date(b + 'T12:00') - new Date(a + 'T12:00')) / 864e5);
 
+const emptyDay = () => ({ ms: 0, q: 0, correct: 0, rt: 0, req: { math: false, ap: false }, areas: {} });
+// Merged (all devices) view of a day - use for reading.
 export function day(k = today()) {
-  return state.days[k] ||= { ms: 0, q: 0, correct: 0, rt: 0, req: { math: false, ap: false }, areas: {} };
+  return state.days[k] ||= emptyDay();
+}
+function myDay(k = today()) { return state.myDays[k] ||= emptyDay(); }
+// Recompute the merged view of one day from this device + linked devices.
+export function rebuildDay(k) {
+  const parts = [state.myDays[k], ...Object.values(state.remoteDays || {}).map(d => d && d[k])].filter(Boolean);
+  if (!parts.length) { delete state.days[k]; return; }
+  const m = emptyDay();
+  let sw = 0;
+  for (const p of parts) {
+    m.ms += p.ms || 0; m.q += p.q || 0; m.correct += p.correct || 0; m.rt += p.rt || 0;
+    for (const r of Object.keys(p.req || {})) if (p.req[r]) m.req[r] = true;
+    for (const [a, v] of Object.entries(p.areas || {})) m.areas[a] = (m.areas[a] || 0) + v;
+    if (p.speedIdx != null) { m.speedIdx = ((m.speedIdx || 0) * sw + p.speedIdx * (p.q || 1)) / (sw + (p.q || 1)); sw += p.q || 1; }
+  }
+  state.days[k] = m;
+}
+export function rebuildAllDays() {
+  const keys = new Set([...Object.keys(state.myDays), ...Object.values(state.remoteDays || {}).flatMap(d => Object.keys(d || {}))]);
+  state.days = {};
+  keys.forEach(rebuildDay);
 }
 
 // Record answered questions + time into today's totals.
 export function recordActivity({ area, ms = 0, q = 0, correct = 0, rtSum = 0, req }) {
-  const d = day();
+  const d = myDay();
   d.ms += ms; d.q += q; d.correct += correct; d.rt += rtSum;
   d.areas[area] = (d.areas[area] || 0) + Math.max(1, Math.round(ms / 60000));
-  if (req) d.req[req] = true;
+  if (req) [].concat(req).forEach(r => (d.req[r] = true));
+  rebuildDay(today());
   save();
 }
 
@@ -94,7 +131,8 @@ export function weekStart(k = today()) {
   d.setDate(d.getDate() - dow);
   return dkey(d);
 }
-export const dayDone = d => !!(d && d.req.math && d.req.ap);
+// A required day = math + AP, or the 5-minute minimum day on tired days.
+export const dayDone = d => !!(d && ((d.req.math && d.req.ap) || d.req.min));
 export const dayActive = d => !!(d && (d.q > 0 || d.ms > 60000));
 
 export function weekCount(ws) {
@@ -125,12 +163,13 @@ export function paceScore(k = today()) {
   if (!d || !d.q && !d.ms) return 0;
   const acc = d.q ? d.correct / d.q : 0;
   const speed = d.speedIdx ?? (d.q ? 0.6 : 0);
-  const plan = (d.req.math ? 0.4 : 0) + (d.req.ap ? 0.4 : 0) + (Object.keys(d.areas).length > 2 ? 0.2 : Math.min(0.2, d.ms / 6e5 * 0.2));
+  const plan = Math.max((d.req.math ? 0.4 : 0) + (d.req.ap ? 0.4 : 0), d.req.min ? 0.6 : 0) + (Object.keys(d.areas).length > 2 ? 0.2 : Math.min(0.2, d.ms / 6e5 * 0.2));
   return Math.round(100 * (0.4 * acc + 0.3 * Math.min(1, speed) + 0.3 * Math.min(1, plan)));
 }
 export function recordSpeed(idx) {
-  const d = day();
+  const d = myDay();
   d.speedIdx = d.speedIdx == null ? idx : (d.speedIdx * 0.6 + idx * 0.4);
+  rebuildDay(today());
   save();
 }
 
@@ -154,6 +193,7 @@ export function markQ(key, right) {
 export function srsReview(key, grade, src) {
   const it = state.srs[key] ||= { due: today(), ivl: 0, ease: 2.4, reps: 0, lapses: 0, src };
   if (src) it.src = src;
+  it.ts = Date.now();
   if (grade <= 1) {
     it.lapses += grade === 0 ? 1 : 0;
     it.reps = 0; it.ivl = 1;
@@ -186,3 +226,15 @@ export const audioDB = {
   async get(id) { const d = await db(); return new Promise((res, rej) => { const r = d.transaction('clips').objectStore('clips').get(id); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
   async del(id) { const d = await db(); return new Promise(res => { const t = d.transaction('clips', 'readwrite'); t.objectStore('clips').delete(id); t.oncomplete = res; }); },
 };
+
+// Personal-records feed (Strava-style). Synced.
+export function addRecord(kind, text, value) {
+  (state.records ||= []).unshift({ id: uid(), kind, text, value, ts: Date.now() });
+  state.records = state.records.slice(0, 300);
+  save();
+}
+// One readiness snapshot per day so the Records page can graph it climbing.
+export function snapshotReadiness(map) {
+  (state.readinessLog ||= {})[today()] = map;
+  save();
+}

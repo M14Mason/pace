@@ -1,5 +1,5 @@
 // Business & Finance: structured lessons, cases, annotation, DECA, and a portfolio sim.
-import { S, save, uid, recordActivity } from '../store.js';
+import { S, save, uid, recordActivity, addRecord } from '../store.js';
 import { h, card, bar, pct, toast, md, svg, fmtMs } from '../ui.js';
 import { FIN_TRACKS, FIN_UNITS, CASES, ARTICLES, DECA, DISCLAIMER } from '../data/finance.js';
 import { renderUnit } from '../unitview.js';
@@ -9,6 +9,7 @@ import { startRound, onRoundFinish, fromBank } from '../quiz.js';
 import { unitReadiness, lessonKey } from '../data/courses.js';
 import { hasAI, gradeMemo, judgeRoleplay, annotateArticle, aiErrorText } from '../ai.js';
 import { dictate } from './speak.js';
+import * as market from './market.js';
 import * as fx from '../fx.js';
 
 export const FINC = { id: 'fin', name: 'Business & Finance', short: 'Finance', src: 'fin', units: FIN_UNITS };
@@ -29,6 +30,9 @@ export function render(root, p) {
   if (p[0] === 'case') return caseView(root, p[1]);
   if (p[0] === 'annotate') return annotate(root, p[1]);
   if (p[0] === 'lab') return lab(root, disc);
+  if (p[0] === 'market') return market.brief(root);
+  if (p[0] === 'company') return market.company(root);
+  if (p[0] === 'pitch') return market.pitch(root, p[1] ? decodeURIComponent(p[1]) : '');
   return hub(root, disc);
 }
 
@@ -39,6 +43,10 @@ function hub(root, disc) {
   root.append(
     h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Business & Finance'), h('div', { class: 'sub' }, `Internship-ready finance · ${pct(total)} through the core track`))),
     disc,
+    h('div', { class: 'grid g3', style: { marginBottom: '12px' } },
+      h('a', { class: 'tile', href: '#/finance/market' }, h('div', { class: 'tile-ic' }, '📈'), h('h4', {}, 'Market brief'), h('div', { class: 'muted' }, 'What moved and why, then a concept quiz')),
+      h('a', { class: 'tile', href: '#/finance/company' }, h('div', { class: 'tile-ic' }, '🏢'), h('h4', {}, 'Analyze a real company'), h('div', { class: 'muted' }, 'Real numbers → P/E, margins, growth')),
+      h('a', { class: 'tile', href: '#/finance/pitch' }, h('div', { class: 'tile-ic' }, '🎤'), h('h4', {}, 'Stock pitch builder'), h('div', { class: 'muted' }, 'Written pitch, then 2 minutes out loud'))),
     h('div', { class: 'tabs' }, ...[['learn', 'Lessons'], ['cases', 'Cases & memos'], ['annotate', 'Annotate'], ['deca', 'DECA'], ['lab', 'Portfolio lab']].map(([k, l]) => h('button', { class: tab === k ? 'on' : '', onclick: () => k === 'lab' ? (location.hash = '#/finance/lab') : k === 'deca' ? (location.hash = '#/finance/deca') : setTab(k) }, l))));
   if (tab === 'learn') root.append(...FIN_TRACKS.map(t => h('div', {},
     h('h3', { class: 'muted', style: { margin: '18px 4px 10px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.07em' } }, `${t.t} · ${t.sub}`),
@@ -66,6 +74,7 @@ function caseView(root, id) {
     btn.disabled = true; btn.textContent = 'Judging…';
     try {
       const g = await gradeMemo({ caseTitle: c.t, caseText: c.setup, task: c.task, response: ta.value });
+      if (g.overall > Math.max(0, ...Object.values(S().memos || {}).map(m => m.overall))) addRecord('score', `Case memo (${c.t}): ${g.overall}/10`, g.overall / 10);
       (S().memos ||= {})[id] = { overall: g.overall, ts: Date.now() }; save();
       recordActivity({ area: 'finance', ms: 12 * 60000 });
       showMemo(out, g);
@@ -169,6 +178,7 @@ function roleplay(root, cl, r) {
     judge.disabled = true; judge.textContent = 'Judge is scoring…';
     try {
       const g = await judgeRoleplay({ event: r.event, scenario: `${r.role}\n${r.scenario}`, pis: r.pis, response: resp.value });
+      if (g.total / g.max > Math.max(0, ...(S().roleplays || []).map(x => x.total / x.max))) addRecord('score', `DECA roleplay (${r.event}): ${g.total}/${g.max}`, g.total / g.max);
       S().roleplays = [{ rid: r.id, total: g.total, max: g.max, ts: Date.now() }, ...(S().roleplays || [])].slice(0, 50); save();
       recordActivity({ area: 'deca', ms: 20 * 60000 });
       out.innerHTML = '';

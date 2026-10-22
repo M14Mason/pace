@@ -1,6 +1,6 @@
 // Prep: every upcoming course with units, lessons, readiness, timed practice,
 // assignments/test dates, an auto study plan and adaptive review.
-import { S, save, uid, today, addDays, daysBetween, dueItems } from '../store.js';
+import { S, save, uid, today, addDays, daysBetween, dueItems, removeById } from '../store.js';
 import { h, card, ring, bar, pct, toast, modal } from '../ui.js';
 import { COURSE, byPriority, courseReadiness, unitReadiness, termOf, termStart, daysUntilStart, TERM_LABEL, lessonKey } from '../data/courses.js';
 import { renderUnit, frqCard } from '../unitview.js';
@@ -122,9 +122,9 @@ function dates(c, refresh) {
   const kind = h('select', { class: 'input' }, h('option', { value: 'test' }, 'Test'), h('option', { value: 'assignment' }, 'Assignment'), h('option', { value: 'reminder' }, 'Reminder'));
   return h('div', { class: 'stack' },
     card('Add a date', h('div', { class: 'stack' }, title, h('div', { class: 'row' }, h('div', { style: { flex: 1 } }, date), h('div', { style: { flex: 1 } }, kind)),
-      h('button', { class: 'btn primary', onclick: () => { if (!title.value.trim()) return toast('Add a title'); S().events.push({ id: uid(), title: title.value.trim(), date: date.value, course: c.id, kind: kind.value }); save(); scheduleReminders(); toast('Added - reminders queued', 'good'); refresh(); } }, 'Add'),
+      h('button', { class: 'btn primary', onclick: () => { if (!title.value.trim()) return toast('Add a title'); S().events.push({ id: uid(), title: title.value.trim(), date: date.value, course: c.id, kind: kind.value, ts: Date.now() }); save(); scheduleReminders(); toast('Added - reminders queued', 'good'); refresh(); } }, 'Add'),
       h('p', { class: 'small muted' }, 'Tests reshape the study plan and get ntfy reminders 3 days and 1 day before.'))),
     card('Upcoming', evs.length ? h('div', { class: 'plan' }, ...evs.map(e => h('div', { class: 'plan-item' }, h('span', { class: `chip ${e.kind === 'test' ? 'bad' : e.kind === 'assignment' ? 'gold' : 'good'}` }, e.kind),
       h('div', { class: 'pi-body' }, h('div', { class: 'pi-t' }, e.title), h('div', { class: 'pi-s' }, `${e.date} · ${daysBetween(today(), e.date) >= 0 ? `in ${daysBetween(today(), e.date)} days` : 'past'}`)),
-      h('button', { class: 'btn sm ghost pi-tag', onclick: () => { S().events = S().events.filter(x => x.id !== e.id); save(); refresh(); } }, 'Remove')))) : h('p', { class: 'empty' }, 'No dates yet.')));
+      h('button', { class: 'btn sm ghost pi-tag', onclick: () => { removeById('events', e.id); refresh(); } }, 'Remove')))) : h('p', { class: 'empty' }, 'No dates yet.')));
 }

@@ -7,6 +7,7 @@ import { S, save, recordActivity, markQ, srsReview, recordSpeed } from './store.
 import { h, $, fmtMs, pct, rich, shuffle, md } from './ui.js';
 import * as fx from './fx.js';
 import { check as mathCheck, fmtAns } from './math/skills.js';
+import { cardsFromRepeatedMisses } from './views/cards.js';
 
 const finishers = {};
 export const onRoundFinish = (kind, fn) => (finishers[kind] = fn);
@@ -173,17 +174,19 @@ export function renderRound(root) {
       if (!q.key) return;
       const a = R.answers[k];
       const grade = hinted.has(k) ? (R.misses.find(m => m.qi === k).hints > 1 ? 0 : 1) : (R.target && a.ms < R.target * 0.7 ? 3 : 2);
-      if (hinted.has(k) || q.srs) srsReview(q.key, grade, q.src || R.area);
+      if (q.srs || (hinted.has(k) && /^(q|g|a|math|scen):/.test(q.key))) srsReview(q.key, grade, q.src || R.area);
     });
     if (R.area === 'math' && R.target) recordSpeed(Math.min(1.2, R.target / Math.max(1, res.med || R.target)));
     recordActivity({ area: R.area, ms: msTotal, q: R.answers.length, correct: res.c || 0, rtSum, req: R.req });
     const fin = finishers[R.kind];
     const out = { ...res, misses: R.misses.map(m => ({ q: R.questions[m.qi], hints: m.hints, tries: m.tries, given: R.answers[m.qi].given })), answers: R.answers, meta: R.meta, msTotal, questions: R.questions };
     S().missLog = [...R.misses.map(m => { const q = R.questions[m.qi]; return { q: q.q, a: answerText(q), given: R.answers[m.qi].given, hints: m.hints, ts: Date.now(), area: R.area, tags: [...(R.tags || []), q.skill].filter(Boolean), key: q.key || null }; }), ...(S().missLog || [])].slice(0, 80);
+    if (res.acc === 1 && res.n >= 10) { const fr = (S().fastRound ||= {}); const k = R.kind; if (!fr[k] || msTotal < fr[k]) { fr[k] = msTotal; import('./store.js').then(m => m.addRecord('clean', `Fastest clean ${R.title}: ${Math.round(msTotal / 1000)}s`, msTotal)); } }
     S().activeRound = null;
     S().lastRound = { kind: R.kind, acc: res.acc, med: res.med, ts: Date.now() };
     save();
     document.body.classList.remove('in-round');
+    try { cardsFromRepeatedMisses(out.misses); } catch (e) { console.warn(e); }
     if (fin) fin(out); else location.hash = '#/';
   }
 }

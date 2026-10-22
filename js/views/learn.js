@@ -9,16 +9,23 @@ import { sk } from './sprint.js';
 import { byPriority } from '../data/courses.js';
 import { unitPool, buildSet } from '../pool.js';
 import * as fx from '../fx.js';
+import * as cards from './cards.js';
+import * as homework from './homework.js';
 
 onRoundFinish('learn-math', res => { location.hash = '#/learn'; setTimeout(() => toast(res.acc >= 0.8 ? 'Understanding is solid - now build speed in Sprint.' : 'Missed ones are scheduled for review.', res.acc >= 0.8 ? 'good' : ''), 400); });
 onRoundFinish('interleave', res => { location.hash = '#/learn'; setTimeout(() => toast(`${Math.round(res.acc * 100)}% across mixed topics`), 400); });
 
 export function render(root, p) {
   if (p[0] === 'math' && SKILL[p[1]]) return mathConcept(root, SKILL[p[1]]);
-  const due = dueItems();
+  if (p[0] === 'cards') return cards.render(root, p.slice(1));
+  if (p[0] === 'help') return homework.render(root);
+  const due = dueItems(k => !k.startsWith('card:'));
   const misses = (S().missLog || []).slice(0, 8);
   root.append(
     h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Learn'), h('div', { class: 'sub' }, 'Understand it first. Speed comes after.'))),
+    h('div', { class: 'grid g2', style: { marginBottom: '12px' } },
+      h('a', { class: 'tile', href: '#/learn/help' }, h('div', { class: 'tile-top' }, h('div', { class: 'tile-ic' }, '?'), h('span', { class: 'chip acc' }, 'photo or text')), h('h4', {}, 'Homework helper'), h('div', { class: 'muted' }, 'Stuck? Hints step by step, then 3 similar problems.')),
+      h('a', { class: 'tile', href: '#/learn/cards' }, h('div', { class: 'tile-top' }, h('div', { class: 'tile-ic' }, '▤'), h('span', { class: 'chip gold' }, `${cards.dueCards().length} due`)), h('h4', {}, 'Flashcards'), h('div', { class: 'muted' }, 'From photos, notes, Quizlet, and anything you miss twice.'))),
     h('div', { class: 'grid g2' },
       card('Spaced review', h('div', { class: 'stack' },
         h('div', { class: 'kpi-v' }, due.length, h('span', { class: 'small muted' }, ' items due')),
