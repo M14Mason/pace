@@ -1,7 +1,7 @@
 import { S, save, exportData, importData, resetAll } from '../store.js';
-import { h, card, toast, seg } from '../ui.js';
+import { h, card, toast, seg, bar } from '../ui.js';
 import { testNtfy, randomTopic, scheduleReminders } from '../ntfy.js';
-import { askJSON, aiErrorText } from '../ai.js';
+import { askJSON, aiErrorText, MODES, FEATURES, PRICES, modelFor, usageMonth, recentCalls, thisMonth } from '../ai.js';
 import { COURSES, TERM_LABEL, termOf } from '../data/courses.js';
 import { bgRetheme } from '../three-bg.js';
 import { cfg, isLinked, setupSync, linkWithCode, linkCode, syncNow, unlink, onSyncStatus, syncStatus } from '../sync.js';
@@ -33,7 +33,8 @@ export function render(root) {
         field('Sounds', seg([{ label: 'On', value: true }, { label: 'Off', value: false }], p.sound, v => { p.sound = v; p.updatedAt = Date.now(); save(); })))),
       card('Claude', h('div', { class: 'stack' },
         field('API key', key, 'Used for FRQ grading, DECA judging, speech analysis, memo grading and generating extra questions. Stored only in this browser and sent only to Anthropic. Get one at console.anthropic.com.'),
-        h('button', { class: 'btn', onclick: async e => { const b = e.currentTarget; b.disabled = true; b.textContent = 'Testing…'; try { const r = await askJSON('Reply with ok=true.', { type: 'object', properties: { ok: { type: 'boolean' } }, required: ['ok'], additionalProperties: false }, { effort: 'low', maxTokens: 1000 }); toast(r.ok ? 'Claude is connected' : 'Unexpected reply', 'good'); } catch (err) { toast(aiErrorText(err), 'bad'); } b.disabled = false; b.textContent = 'Test connection'; } }, 'Test connection'))),
+        h('button', { class: 'btn', onclick: async e => { const b = e.currentTarget; b.disabled = true; b.textContent = 'Testing…'; try { const r = await askJSON('Reply with ok=true.', { type: 'object', properties: { ok: { type: 'boolean' } }, required: ['ok'], additionalProperties: false }, { effort: 'low', maxTokens: 1000, feature: 'test' }); toast(r.ok ? 'Claude is connected' : 'Unexpected reply', 'good'); } catch (err) { toast(aiErrorText(err), 'bad'); } b.disabled = false; b.textContent = 'Test connection'; } }, 'Test connection'))),
+      usageCard(p),
       syncCard(),
       card('Phone reminders (ntfy)', h('div', { class: 'stack' },
         h('ol', { class: 'small' }, h('li', {}, 'Install the free ntfy app on your iPhone.'), h('li', {}, 'Tap Generate below, then in ntfy tap + and subscribe to that exact topic.'), h('li', {}, 'Tap Send test.')),
@@ -100,4 +101,31 @@ function syncCard() {
   onSyncStatus(() => { if (body.isConnected) draw(); });
   draw();
   return card('Sync devices', body);
+}
+
+function usageCard(p) {
+  const money = v => v < 0.01 && v > 0 ? '<$0.01' : `$${v.toFixed(2)}`;
+  const body = h('div', { class: 'stack' });
+  const draw = () => {
+    body.innerHTML = '';
+    const m = usageMonth(), prevKey = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 15).toISOString().slice(0, 7), prev = usageMonth(prevKey);
+    const cap = +p.aiCap || 0;
+    const capIn = h('input', { class: 'input', type: 'number', min: 0, step: 1, inputmode: 'decimal', placeholder: 'No cap', value: cap || '', style: { width: '110px' } });
+    capIn.onchange = () => { p.aiCap = Math.max(0, +capIn.value || 0); p.updatedAt = Date.now(); save(); toast(p.aiCap ? `Cap set: $${p.aiCap}/month` : 'Cap removed'); draw(); };
+    const feats = Object.entries(m.byFeature).sort((a, b) => b[1].cost - a[1].cost);
+    body.append(
+      h('div', { class: 'row between' }, h('div', {}, h('div', { class: 'kpi-l' }, `This month (${thisMonth()})`), h('div', { class: 'kpi-v' }, money(m.total)), h('div', { class: 'small muted' }, `${m.calls} Claude calls · last month ${money(prev.total)}`)),
+        h('div', { class: 'field', style: { alignItems: 'flex-end' } }, h('label', {}, 'Monthly cap ($)'), capIn)),
+      cap ? h('div', {}, bar(Math.min(1, m.total / cap), { cls: m.total >= cap ? 'bad' : m.total >= cap * 0.8 ? 'gold' : 'good' }), h('div', { class: 'small muted', style: { marginTop: '4px' } }, m.total >= cap ? 'Cap reached - Claude features are paused until next month or until you raise it.' : `${money(cap - m.total)} left · Claude features pause at the cap.`)) : null,
+      h('div', { class: 'field' }, h('label', {}, 'Model mode'),
+        seg(Object.entries(MODES).map(([value, x]) => ({ label: x.label, value })), p.aiMode || 'best', v => { p.aiMode = v; p.updatedAt = Date.now(); save(); draw(); }),
+        h('div', { class: 'small muted' }, MODES[p.aiMode || 'best'].desc)),
+      feats.length ? h('div', { class: 'feedback-rows' }, ...feats.map(([k, f]) => h('div', { class: 'row between' },
+        h('div', {}, h('div', { style: { fontWeight: 600 } }, FEATURES[k]?.label || k), h('div', { class: 'small muted' }, `${f.calls}× · avg ${money(f.cost / f.calls)} · ${PRICES[modelFor(k)]?.name || ''} now${f.searches ? ` · ${f.searches} searches` : ''}`)),
+        h('b', { class: 'num' }, money(f.cost))))) : h('p', { class: 'small muted' }, 'No Claude usage yet this month.'),
+      recentCalls().length ? h('details', {}, h('summary', { class: 'small muted' }, 'Recent calls'), h('div', { class: 'feedback-rows small' }, ...recentCalls().map(r => h('div', { class: 'row between' }, h('span', {}, `${FEATURES[r.feature]?.label || r.feature} · ${PRICES[r.model]?.name || r.model}`), h('span', { class: 'num' }, `${money(r.cost)} · ${new Date(r.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`))))) : null,
+      h('p', { class: 'small muted' }, 'Calculated from the exact token counts Claude returns, at list prices (Opus 5.5 $4/$20, Sonnet 5.5 $2/$10, Haiku 5.5 $0.10/$0.50 per million tokens in/out; web search $10 per 1,000). Includes all synced devices. Your Anthropic Console bill is the official number - also set a spend limit there.'));
+  };
+  draw();
+  return card('Claude usage & cost', body);
 }
