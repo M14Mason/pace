@@ -1,7 +1,7 @@
 // Dashboard: today's plan, Pace Score, streaks, stats over time, calendar, heatmap.
 import { S, save, snapshotReadiness, today, day, dayDone, weekStart, weekCount, weekStreak, dayStreak, paceScore, rangeStats, dueItems, addDays, daysBetween } from '../store.js';
 import { h, card, ring, bar, pct, fmtMs, fmtMin, heatmap, calendar, lineChart, scoreSeries, weekBoard, countUp, modal } from '../ui.js';
-import { skyline } from '../three-bg.js';
+import { skyline, orb } from '../three-bg.js';
 import { COURSES, byPriority, courseReadiness, COURSE } from '../data/courses.js';
 import { startDaily, gatedSkills, totalLevel, dailyQuestions } from './sprint.js';
 import { resolveKey } from '../pool.js';
@@ -118,7 +118,9 @@ export function render(root) {
     !hasAI() ? card('Unlock Claude features', h('p', { class: 'small' }, 'Add your Claude API key in Settings for FRQ grading, DECA judging, speech analysis and unlimited generated practice.')) : null,
   );
   const dispose = skyline(sky, scoreSeries(30).map(p => p.y));
-  return dispose;
+  const orbBox = h('div', { class: 'orb' }); scoreRing.prepend(orbBox);
+  const disposeOrb = orb(orbBox, score);
+  return () => { dispose(); disposeOrb(); };
 }
 
 const kpi = (l, v, s) => h('div', { class: 'kpi' }, h('div', { class: 'kpi-l' }, l), h('div', { class: 'kpi-v' }, v), h('div', { class: 'kpi-s' }, s));

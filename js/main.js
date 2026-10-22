@@ -1,7 +1,8 @@
 import { S, save } from './store.js';
 import { h, $ } from './ui.js';
 import { pageIn, pageOut } from './fx.js';
-import { initBackground } from './three-bg.js';
+import { initBackground, bgMood } from './three-bg.js';
+import { reveal } from './fx.js';
 import { renderRound, unbindKeys } from './quiz.js';
 import { scheduleReminders } from './ntfy.js';
 import { startAutoSync } from './sync.js';
@@ -37,7 +38,29 @@ function navLinks(full) {
     h('span', { class: 'nav-l' }, full ? FULL[href] : label)));
 }
 $('#nav').append(...navLinks(true));
-$('#tabbar').append(...navLinks(false));
+$('#tabbar').append(h('div', { class: 'dock-ind' }), ...navLinks(false));
+
+// Dock animation: grow the active tab and slide the indicator under it (GSAP).
+let dockReady = false;
+function moveDock(href) {
+  const bar = $('#tabbar'), ind = $('.dock-ind', bar);
+  const links = [...bar.querySelectorAll('.nav-a')];
+  const prev = links.map(l => parseFloat(getComputedStyle(l).flexGrow) || 1);
+  links.forEach(l => l.classList.toggle('on', l.dataset.href === href));
+  const target = links.map(l => (l.classList.contains('on') ? 3 : 1));
+  links.forEach((l, i) => (l.style.flexGrow = target[i]));
+  const on = links.find(l => l.classList.contains('on'));
+  if (!on || getComputedStyle(bar).display === 'none') return;
+  const br = bar.getBoundingClientRect(), r = on.getBoundingClientRect();
+  const x = r.left - br.left, w = r.width;
+  if (!window.gsap || !dockReady) { links.forEach((l, i) => (l.style.flexGrow = target[i])); if (window.gsap) gsap.set(ind, { x, width: w }); else Object.assign(ind.style, { transform: `translateX(${x}px)`, width: w + 'px' }); dockReady = !!window.gsap; return; }
+  links.forEach((l, i) => (l.style.flexGrow = prev[i]));
+  gsap.to(links, { flexGrow: i => target[i], duration: 0.5, ease: 'back.out(1.5)' });
+  gsap.to(ind, { x, width: w, duration: 0.5, ease: 'back.out(1.5)' });
+  gsap.fromTo(ind, { scaleY: 0.86 }, { scaleY: 1, duration: 0.5, ease: 'elastic.out(1, 0.5)' });
+  gsap.fromTo(on.querySelector('.nav-ic'), { y: 4, rotate: -12 }, { y: 0, rotate: 0, duration: 0.6, ease: 'elastic.out(1.1, 0.45)' });
+}
+addEventListener('resize', () => { dockReady = false; moveDock($('#tabbar .nav-a.on')?.dataset.href || '#/'); });
 
 const routes = [
   [/^#\/?$/, dashboard.render],
@@ -66,7 +89,8 @@ async function route() {
   if (hash !== '#/round') document.body.classList.remove('in-round');
   view.innerHTML = '';
   const base = '#/' + (hash.split('/')[1] || '');
-  document.querySelectorAll('.nav-a').forEach(a => a.classList.toggle('on', a.dataset.href === (base === '#/' ? '#/' : base)));
+  document.querySelectorAll('#nav .nav-a').forEach(a => a.classList.toggle('on', a.dataset.href === base));
+  moveDock(base);
   for (const [re, fn] of routes) {
     const m = hash.match(re);
     if (m) {
@@ -75,6 +99,8 @@ async function route() {
       try { cleanup = await fn(page, (m[1] || '').split('/').filter(Boolean)); }
       catch (e) { console.error(e); page.append(h('div', { class: 'card' }, h('h3', {}, 'Something broke on this page'), h('pre', { class: 'err' }, String(e.stack || e)))); }
       pageIn(page);
+      setTimeout(() => reveal(page), 80);
+      bgMood(hash === '#/round' ? 'round' : hash.startsWith('#/records') ? 'records' : ({ '#/': 'home', '#/sprint': 'sprint', '#/learn': 'learn', '#/finance': 'finance', '#/prep': 'prep', '#/speak': 'speak', '#/log': 'log' })[base] || 'home');
       break;
     }
   }

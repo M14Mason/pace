@@ -227,7 +227,7 @@ export function keypad(q, submit) {
     else if (k === 'go') { const v = val; if (v) { set(''); submit(v); } }
     else if (val.length < 12) set(val + k);
   };
-  const pad = h('div', { class: 'kp' }, ...keys.map(k => h('button', { class: 'kp-key', onpointerdown: e => { e.preventDefault(); fx.press(e.currentTarget); press(k); } }, k)));
+  const pad = h('div', { class: 'kp' }, ...keys.map(k => h('button', { class: 'kp-key', onpointerdown: e => { e.preventDefault(); fx.press(e.currentTarget); fx.ripple(e.currentTarget, e); press(k); } }, k)));
   const go = h('button', { class: 'kp-go', onpointerdown: e => { e.preventDefault(); fx.press(e.currentTarget); press('go'); } }, 'Enter ↵');
   bindKeys(e => {
     if (e.target.closest && e.target.closest('input,textarea')) return;
@@ -244,7 +244,7 @@ export function keypad(q, submit) {
 export function choices(q, submit, keepOpen = false) {
   const btns = q.choices.map((c, i) => h('button', {
     class: 'choice', onclick: e => {
-      fx.press(e.currentTarget);
+      fx.press(e.currentTarget); fx.ripple(e.currentTarget, e);
       if (keepOpen && !isRight(q, c)) e.currentTarget.classList.add('struck');
       submit(c);
     },

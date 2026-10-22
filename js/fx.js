@@ -1,6 +1,6 @@
 // Motion + sound feedback. Everything is short (<400ms) so it never slows answering.
 import { S } from './store.js';
-import { bgPulse } from './three-bg.js';
+import { bgPulse, bgBurst } from './three-bg.js';
 import { h } from './ui.js';
 
 const G = () => window.gsap;
@@ -30,8 +30,9 @@ export const sfx = {
   level: () => tone([523, 659, 784, 1047], { dur: 0.12, gain: 0.05 }),
 };
 
+const center = el => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
 export function correct(el) {
-  sfx.good(); bgPulse('good');
+  sfx.good(); bgPulse('good'); if (el) bgBurst(...center(el), 'good');
   if (!G() || !el) return;
   G().fromTo(el, { scale: 1 }, { scale: 1.035, duration: 0.11, yoyo: true, repeat: 1, ease: 'power2.out' });
   flash(el, 'var(--good)');
@@ -73,7 +74,7 @@ export function burst(el, { n = 26, colors = ['var(--accent)', 'var(--good)', 'v
 }
 
 export function levelUp(title, sub) {
-  sfx.level(); bgPulse('gold');
+  sfx.level(); bgPulse('gold'); bgBurst(innerWidth / 2, innerHeight / 2, 'gold', true);
   const el = h('div', { class: 'levelup' }, h('div', { class: 'lu-badge' }, '▲'), h('div', { class: 'lu-title' }, title), h('div', { class: 'lu-sub' }, sub));
   document.body.append(el);
   if (!G()) { setTimeout(() => el.remove(), 1800); return; }
@@ -102,4 +103,33 @@ export function pageOut(el) {
 export function press(btn) {
   if (!G()) return;
   G().fromTo(btn, { scale: 0.92 }, { scale: 1, duration: 0.25, ease: 'back.out(3)' });
+}
+
+// 3D tilt + press for tiles (pointer-following, GSAP quickTo).
+export function tilt(el) {
+  if (!G() || reduce || el.dataset.tilt) return;
+  el.dataset.tilt = 1;
+  G().set(el, { transformPerspective: 700 });
+  const rx = G().quickTo(el, 'rotationX', { duration: 0.4, ease: 'power3' }), ry = G().quickTo(el, 'rotationY', { duration: 0.4, ease: 'power3' });
+  el.addEventListener('pointermove', e => { const r = el.getBoundingClientRect(); ry(((e.clientX - r.left) / r.width - 0.5) * 10); rx(-((e.clientY - r.top) / r.height - 0.5) * 10); });
+  el.addEventListener('pointerleave', () => { rx(0); ry(0); });
+  el.addEventListener('pointerdown', () => G().to(el, { scale: 0.97, duration: 0.12 }));
+  el.addEventListener('pointerup', () => G().to(el, { scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.5)' }));
+}
+// Reveal cards as they scroll into view.
+let io;
+export function reveal(root) {
+  if (!G() || reduce || !('IntersectionObserver' in window)) return;
+  io ||= new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { io.unobserve(e.target); G().to(e.target, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: 'power3.out' }); } }), { rootMargin: '0px 0px -8% 0px' });
+  const vh = innerHeight;
+  root.querySelectorAll('.card, .kpi, .unit-row, .tile').forEach(el => { if (el.getBoundingClientRect().top > vh) { G().set(el, { opacity: 0, y: 28, scale: 0.98 }); io.observe(el); } });
+  root.querySelectorAll('.tile').forEach(tilt);
+}
+// Ripple from the press point (keypad, choices, buttons).
+export function ripple(btn, e) {
+  if (!G() || reduce) return;
+  const r = btn.getBoundingClientRect(), d = Math.max(r.width, r.height) * 2;
+  const s = h('span', { class: 'ripple', style: { width: d + 'px', height: d + 'px', left: (e.clientX - r.left - d / 2) + 'px', top: (e.clientY - r.top - d / 2) + 'px' } });
+  btn.append(s);
+  G().fromTo(s, { scale: 0, opacity: 0.35 }, { scale: 1, opacity: 0, duration: 0.55, ease: 'power2.out', onComplete: () => s.remove() });
 }

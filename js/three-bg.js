@@ -75,6 +75,68 @@ export function initBackground(canvas) {
     uniforms.uMouse.value.set(e.clientX / innerWidth - 0.5, e.clientY / innerHeight - 0.5);
   }, { passive: true });
 
+  // ---- particle bursts (pooled, CPU-updated; 900 sprites is cheap) ----
+  const PN = 900;
+  const pPos = new Float32Array(PN * 3), pCol = new Float32Array(PN * 3), pSize = new Float32Array(PN);
+  const pVel = new Float32Array(PN * 3), pLife = new Float32Array(PN);
+  const pGeo = new THREE.BufferGeometry();
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
+  pGeo.setAttribute('size', new THREE.BufferAttribute(pSize, 1));
+  const pMat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, vertexColors: true,
+    vertexShader: `attribute float size; varying vec3 vC; varying float vA;
+      void main(){ vC = color; vA = clamp(size, 0.0, 1.0); vec4 mv = modelViewMatrix * vec4(position,1.0);
+        gl_PointSize = size * 22.0 * (6.0 / -mv.z) * ${renderer.getPixelRatio().toFixed(2)}; gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `varying vec3 vC; varying float vA;
+      void main(){ vec2 c = gl_PointCoord - 0.5; float d = length(c); if (d > 0.5) discard;
+        float core = smoothstep(0.5, 0.0, d); gl_FragColor = vec4(mix(vC, vec3(1.0), core*core*0.35), core * vA); }`,
+  });
+  const burstPts = new THREE.Points(pGeo, pMat);
+  burstPts.frustumCulled = false;
+  scene.add(burstPts);
+  let pNext = 0;
+  const tmp = new THREE.Vector3();
+  function spawn(sx, sy, color, count, power) {
+    // screen point -> world point on a plane 6 units in front of the camera
+    tmp.set((sx / innerWidth) * 2 - 1, -(sy / innerHeight) * 2 + 1, 0.5).unproject(camera);
+    const dir = tmp.sub(camera.position).normalize();
+    const origin = camera.position.clone().add(dir.multiplyScalar(6));
+    const cols = [new THREE.Color(color), new THREE.Color(css('--accent')), new THREE.Color('#ffffff')];
+    for (let i = 0; i < count; i++) {
+      const k = pNext; pNext = (pNext + 1) % PN;
+      pPos[k * 3] = origin.x; pPos[k * 3 + 1] = origin.y; pPos[k * 3 + 2] = origin.z;
+      const th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1), sp = power * (0.4 + Math.random());
+      pVel[k * 3] = Math.sin(ph) * Math.cos(th) * sp; pVel[k * 3 + 1] = Math.abs(Math.cos(ph)) * sp * 1.2 + 0.6 * power; pVel[k * 3 + 2] = Math.sin(ph) * Math.sin(th) * sp;
+      const c = cols[i % 5 === 0 ? 2 : i % 3 === 0 ? 1 : 0];
+      pCol[k * 3] = c.r; pCol[k * 3 + 1] = c.g; pCol[k * 3 + 2] = c.b;
+      pLife[k] = 1; pSize[k] = 1;
+    }
+  }
+  function stepParticles(dt) {
+    let alive = false;
+    for (let k = 0; k < PN; k++) {
+      if (pLife[k] <= 0) { if (pSize[k] !== 0) pSize[k] = 0; continue; }
+      alive = true;
+      pLife[k] -= dt * 0.9;
+      pVel[k * 3 + 1] -= dt * 4.2; // gravity
+      pVel[k * 3] *= 0.985; pVel[k * 3 + 2] *= 0.985;
+      pPos[k * 3] += pVel[k * 3] * dt; pPos[k * 3 + 1] += pVel[k * 3 + 1] * dt; pPos[k * 3 + 2] += pVel[k * 3 + 2] * dt;
+      pSize[k] = Math.max(0, pLife[k]);
+    }
+    if (alive) { pGeo.attributes.position.needsUpdate = true; pGeo.attributes.size.needsUpdate = true; pGeo.attributes.color.needsUpdate = true; }
+  }
+
+  // ---- per-tab moods: accent tint + camera angle, tweened with GSAP ----
+  const camTarget = { y: 5.5, z: 9, look: -2 };
+  const MOODS = {
+    home: { c: '--accent', y: 5.5, z: 9 }, sprint: { c: '#6D4AFF', y: 4.2, z: 8 }, learn: { c: '#0E9F8E', y: 6.5, z: 10 },
+    finance: { c: '#12A150', y: 5, z: 9.5 }, prep: { c: '#E07A16', y: 6, z: 9 }, speak: { c: '#DB2777', y: 4.8, z: 8.5 }, log: { c: '#C28A0B', y: 6.8, z: 10.5 },
+    round: { c: '--accent', y: 3.6, z: 7.5 }, records: { c: '#E8A317', y: 5.2, z: 8.8 },
+  };
+  let scrollY0 = 0;
+  addEventListener('scroll', () => { scrollY0 = scrollY; }, { passive: true });
+
   let running = true, last = performance.now();
   document.addEventListener('visibilitychange', () => { running = !document.hidden; if (running) { last = performance.now(); loop(); } });
   function loop() {
@@ -84,6 +146,10 @@ export function initBackground(canvas) {
     if (!reduce) uniforms.uTime.value += dt;
     uniforms.uPulse.value = Math.max(0, uniforms.uPulse.value - dt * 0.9);
     pts.rotation.y += (uniforms.uMouse.value.x * 0.12 - pts.rotation.y) * 0.03;
+    // scroll parallax: the field drifts away as you scroll down a page
+    pts.position.z += (Math.min(4, scrollY0 / 400) - pts.position.z) * 0.06;
+    camera.position.y = camTarget.y; camera.position.z = camTarget.z; camera.lookAt(0, 0, camTarget.look);
+    stepParticles(dt);
     renderer.render(scene, camera);
     requestAnimationFrame(loop);
   }
@@ -95,12 +161,26 @@ export function initBackground(canvas) {
       uniforms.uPulse.value = 1;
     },
     setLevel(x) { uniforms.uLevel.value = x; },
+    burst(x, y, kind = 'good', big = false) {
+      const color = css(kind === 'bad' ? '--bad' : kind === 'gold' ? '--gold' : '--good');
+      spawn(x, y, color, big ? 260 : 46, big ? 3.4 : 1.6);
+    },
+    mood(name) {
+      const m = MOODS[name] || MOODS.home;
+      const col = new THREE.Color(m.c.startsWith('--') ? css(m.c) : m.c);
+      if (window.gsap) {
+        gsap.to(uniforms.uAccent.value, { r: col.r, g: col.g, b: col.b, duration: 1.1, ease: 'power2.out' });
+        gsap.to(camTarget, { y: m.y, z: m.z, duration: 1.4, ease: 'power3.inOut' });
+      } else { uniforms.uAccent.value.copy(col); Object.assign(camTarget, { y: m.y, z: m.z }); }
+    },
     retheme() { uniforms.uBase.value.set(css('--ink')); uniforms.uAccent.value.set(css('--accent')); },
   };
 }
 export const bgPulse = k => bg && bg.pulse(k);
 export const bgLevel = x => bg && bg.setLevel(x);
 export const bgRetheme = () => bg && bg.retheme();
+export const bgBurst = (x, y, kind, big) => bg && !reduce && bg.burst(x, y, kind, big);
+export const bgMood = name => bg && bg.mood(name);
 
 // 3D bar skyline. values: array of 0..100. Returns dispose().
 export function skyline(container, values) {
@@ -161,4 +241,37 @@ export function skyline(container, values) {
   }
   loop();
   return () => { alive = false; ro.disconnect(); renderer.dispose(); renderer.domElement.remove(); };
+}
+
+// Liquid orb for the Pace Score: a noisy sphere whose "fill line" sits at the score.
+export function orb(container, value) {
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); } catch { return () => {}; }
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  container.append(renderer.domElement);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 10); camera.position.z = 3.2;
+  const u = { uT: { value: 0 }, uFill: { value: -1 }, uA: { value: new THREE.Color(css('--accent')) }, uB: { value: new THREE.Color(css('--card2') || '#efede7') } };
+  const mat = new THREE.ShaderMaterial({ uniforms: u, transparent: true,
+    vertexShader: `uniform float uT; varying vec3 vN; varying vec3 vP;
+      void main(){ vec3 p = position; float w = sin(p.y*6.0+uT*1.6)*0.025 + sin(p.x*5.0-uT*1.2)*0.02; p += normal*w;
+        vN = normalize(normalMatrix*normal); vP = p; gl_Position = projectionMatrix*modelViewMatrix*vec4(p,1.0); }`,
+    fragmentShader: `uniform float uT; uniform float uFill; uniform vec3 uA; uniform vec3 uB; varying vec3 vN; varying vec3 vP;
+      void main(){ float wave = sin(vP.x*7.0+uT*2.2)*0.035 + sin(vP.z*5.0-uT*1.7)*0.03;
+        float inside = step(vP.y, uFill + wave);
+        vec3 col = mix(uB, uA, inside);
+        col = mix(col, uA*1.25, inside * smoothstep(0.06, 0.0, abs(vP.y - uFill - wave)));
+        float rim = pow(1.0 - abs(vN.z), 2.5);
+        col += rim * 0.35;
+        gl_FragColor = vec4(col, 0.92); }` });
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 48), mat);
+  scene.add(mesh);
+  const size = () => { const s = container.clientWidth || 100; renderer.setSize(s, s); };
+  size();
+  const target = -1 + 2 * Math.max(0.02, Math.min(1, value / 100));
+  if (window.gsap) gsap.to(u.uFill, { value: target, duration: 1.6, ease: 'power3.out', delay: 0.15 }); else u.uFill.value = target;
+  let alive = true, t0 = performance.now();
+  const loop = () => { if (!alive) return; u.uT.value = (performance.now() - t0) / 1000; mesh.rotation.y = u.uT.value * 0.25; renderer.render(scene, camera); requestAnimationFrame(loop); };
+  loop();
+  return () => { alive = false; renderer.dispose(); renderer.domElement.remove(); };
 }
