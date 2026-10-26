@@ -6,6 +6,7 @@ import { startRound, onRoundFinish, relevantTips } from '../quiz.js';
 import * as fx from '../fx.js';
 import { bgLevel } from '../three-bg.js';
 import { PACKS, PACK, scenarioQ } from '../math/scenarios.js';
+import { trickSheet } from '../data/tricks.js';
 
 export const sk = id => (S().skills[id] ||= { level: 1, rounds: [], gate: null, best: {} });
 const prefs = () => (S().sprintPrefs ||= { mode: 'mixed', len: 10 });
@@ -186,6 +187,7 @@ function renderGate(root, id) {
       ...steps,
       h('div', { class: 'row', style: { marginTop: '10px' } },
         h('button', { class: 'btn sm', onclick: e => { if (shown < steps.length) { steps[shown].classList.remove('hidden-step'); fx.pop(steps[shown]); shown++; } if (shown >= steps.length) { e.currentTarget.textContent = `Answer: ${fmtAns(ex)}`; } } }, 'Next step'))),
+    trickSheet(id, 'All the tricks for this skill'),
     tips.length ? h('div', { class: 'lesson-step' }, h('h3', {}, 'From your Log'), ...tips.map(t => h('p', {}, t.text))) : null,
     h('div', { class: 'lesson-step' },
       h('h3', {}, 'Plan'),

@@ -12,6 +12,7 @@ import * as fx from '../fx.js';
 import * as cards from './cards.js';
 import * as homework from './homework.js';
 import * as factoring from './factoring.js';
+import { trickSheet } from '../data/tricks.js';
 
 onRoundFinish('learn-math', res => { location.hash = '#/learn'; setTimeout(() => toast(res.acc >= 0.8 ? 'Understanding is solid - now build speed in Sprint.' : 'Missed ones are scheduled for review.', res.acc >= 0.8 ? 'good' : ''), 400); });
 onRoundFinish('interleave', res => { location.hash = '#/learn'; setTimeout(() => toast(`${Math.round(res.acc * 100)}% across mixed topics`), 400); });
@@ -90,6 +91,7 @@ function mathConcept(root, s) {
   root.append(h('div', { class: 'lesson' },
     h('div', { class: 'page-head' }, h('div', {}, h('a', { href: '#/learn', class: 'muted small' }, '← Learn'), h('h1', {}, s.name), h('div', { class: 'sub' }, `Level ${L} · understand the method before timing it`))),
     h('div', { class: 'lesson-step' }, h('h3', {}, '1 · The idea'), h('p', { html: md(s.lesson) })),
+    trickSheet(s.id, '1b · Speed tricks - how to do it fast'),
     h('div', { class: 'lesson-step' }, h('h3', {}, '2 · Worked example'), h('div', { style: { font: '700 22px var(--num)', marginBottom: '8px' } }, ex.q), ...steps, h('div', { class: 'row', style: { marginTop: '10px' } }, next)),
     h('div', { class: 'lesson-step' }, h('h3', {}, '3 · Faded example - you finish it'), fadedBox, h('div', { style: { marginTop: '10px' } }, pad)),
     h('div', { class: 'lesson-step' }, h('h3', {}, '4 · On your own'), h('p', { class: 'small muted' }, 'Five questions, untimed. Misses come back with hints.'),

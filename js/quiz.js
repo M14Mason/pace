@@ -8,6 +8,9 @@ import { h, $, fmtMs, pct, rich, shuffle, md } from './ui.js';
 import * as fx from './fx.js';
 import { check as mathCheck, fmtAns } from './math/skills.js';
 import { cardsFromRepeatedMisses } from './views/cards.js';
+import { coachFor } from './data/tricks.js';
+import { READINGS } from './data/readings/index.js';
+import { COURSE } from './data/courses.js';
 
 const finishers = {};
 export const onRoundFinish = (kind, fn) => (finishers[kind] = fn);
@@ -26,11 +29,32 @@ function isRight(q, input) {
 const answerText = q => (q.mc ? q.a : fmtAns(q));
 
 // Start a new round. opts: { kind, meta, title, questions, target (ms), area, req, tags, timed }
+// Teach before testing: work out which tricks / exam tips this round needs.
+function buildCoach(questions) {
+  const mathKeys = [], unitKeys = [];
+  for (const q of questions) {
+    const k = q.key || '';
+    if (k.startsWith('scen:') || k.startsWith('fact:')) mathKeys.push(k.split(':').slice(0, 2).join(':'));
+    else if (q.skill && q.skill !== 'scen' && q.skill !== 'factor') mathKeys.push(q.skill);
+    else { const m = k.match(/^[qga]:([^/]+)\/([^/]+)\//); if (m) unitKeys.push(`${m[1]}/${m[2]}`); }
+  }
+  const counts = {}; mathKeys.forEach(k => (counts[k] = (counts[k] || 0) + 1));
+  const sections = coachFor(Object.keys(counts).sort((a, b) => counts[b] - counts[a]));
+  for (const uk of [...new Set(unitKeys)].slice(0, 2)) {
+    const r = READINGS[uk]; if (!r) continue;
+    const tips = [...Object.values(r.notes || {}), ...r.recap].slice(0, 4);
+    const [cid, uid] = uk.split('/'); const c = COURSE[cid]; const u = c && c.units.find(x => x.id === uid);
+    sections.push({ key: uk, title: c ? `${c.short} · ${u ? u.t : ''} · tips` : 'Tips for this round', tips });
+  }
+  return sections;
+}
+
 export function startRound(opts) {
+  const coach = opts.coach === false ? [] : buildCoach(opts.questions);
   S().activeRound = {
     kind: opts.kind, meta: opts.meta || {}, title: opts.title, area: opts.area || 'math', req: opts.req || null,
     target: opts.target || 0, tags: opts.tags || [], intro: opts.intro || null,
-    questions: opts.questions, stage: 'answer', i: 0, answers: [], misses: [], mi: 0, started: Date.now(), msTotal: 0,
+    questions: opts.questions, coach, stage: coach.length ? 'coach' : 'answer', i: 0, answers: [], misses: [], mi: 0, started: Date.now(), msTotal: 0,
   };
   save();
   location.hash = '#/round';
@@ -57,9 +81,29 @@ export function renderRound(root) {
     el.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
   }, 500);
 
-  if (R.stage === 'answer') answerStage();
+  if (R.stage === 'coach') coachStage();
+  else if (R.stage === 'answer') answerStage();
   else if (R.stage === 'summary') summaryStage();
   else missStage();
+
+  function coachStage() {
+    stage.innerHTML = '';
+    const tagsFor = sec => [...(R.tags || []), sec.key.replace(/^(scen|fact):/, '')];
+    const cards = R.coach.map(sec => h('div', { class: 'coach-card' },
+      h('div', { class: 'coach-title' }, sec.title),
+      ...(sec.tricks || []).map(([name, how, ex]) => {
+        autoLog('strategy', `${sec.title} - ${name}: ${how}\nEx: ${ex.replace(/\*\*/g, '')}`, tagsFor(sec), 'trick:' + sec.key + name);
+        return h('div', { class: 'coach-trick' }, h('div', { class: 'coach-name' }, '⚡ ', name), h('div', { html: md(how) }), h('div', { class: 'coach-ex', html: md(ex) }));
+      }),
+      ...(sec.tips || []).map(t => h('div', { class: 'coach-trick' }, h('div', { html: md('💡 ' + t) }))),
+      sec.trap ? h('div', { class: 'coach-trap', html: md('⚠ Trap: ' + sec.trap) }) : null));
+    stage.append(
+      h('div', { class: 'coach-head' }, h('div', { class: 'small', style: { fontWeight: 700, color: 'var(--accent)', letterSpacing: '.06em' } }, 'BEFORE YOU START'), h('h2', {}, 'Use these on this round')),
+      ...cards,
+      h('button', { class: 'btn primary wide', style: { marginTop: 'auto' }, onclick: () => { R.stage = 'answer'; R.started = Date.now(); save(); answerStage(); } }, 'Got it - start ↵'));
+    fx.stagger([...stage.querySelectorAll('.coach-card')]);
+    bindKeys(e => { if (e.key === 'Enter') { e.preventDefault(); stage.querySelector('.btn.primary').click(); } });
+  }
 
   function answerStage() {
     if (R.i >= R.questions.length) { R.stage = 'summary'; save(); return summaryStage(); }

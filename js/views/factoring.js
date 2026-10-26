@@ -4,6 +4,7 @@ import { h, card, seg, md, pct, fmtMs, toast } from '../ui.js';
 import { TYPES, TYPE, factorQ } from '../math/factor.js';
 import { startRound, onRoundFinish } from '../quiz.js';
 import * as fx from '../fx.js';
+import { trickSheet, TRICKS } from '../data/tricks.js';
 
 onRoundFinish('factor', res => {
   const best = (S().factorBest ||= {});
@@ -24,6 +25,7 @@ export function render(root) {
     let shown = 1;
     box.append(
       h('p', { class: 'small', html: md(t ? t.lesson : 'A mix of every pattern - you have to recognize which one it is. Order to check: GCF → two terms (difference of squares) → three terms (pair numbers or AC).') }),
+      trickSheet(t ? 'fact:' + t.id : 'fact:full', 'Tricks'),
       h('details', {}, h('summary', { class: 'small muted' }, 'Worked example'),
         h('div', { style: { marginTop: '8px' } }, h('div', { html: md(ex.q) }), ...steps,
           h('button', { class: 'btn sm', style: { marginTop: '6px' }, onclick: e => { if (shown < steps.length) { steps[shown].classList.remove('hidden-step'); fx.pop(steps[shown]); shown++; } if (shown >= steps.length) e.currentTarget.remove(); } }, 'Next step'))),
