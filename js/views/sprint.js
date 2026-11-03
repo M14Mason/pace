@@ -170,7 +170,7 @@ function renderGate(root, id) {
   let shown = 1;
   const tips = relevantTips([id]);
   root.append(h('div', { class: 'lesson' },
-    h('div', { class: 'page-head' }, h('div', {}, h('a', { href: '#/sprint', class: 'muted small' }, '← Sprint'), h('h1', {}, `${s.name} · Level ${g.level}`), h('div', { class: 'sub' }, 'Not advancing yet - here is exactly what to fix.'))),
+    h('div', { class: 'page-head' }, h('div', {}, h('a', { href: '#/sprint', class: 'muted small' }, '← Sprint'), h('h1', {}, `${s.name} · Level ${g.level}`), h('div', { class: 'sub' }, g.type === 'speed' ? 'You\'re accurate - now a faster method. One drill, then retest.' : 'Let\'s make it reliable first. Speed comes after.'))),
     h('div', { class: 'lesson-step gate' },
       h('h3', {}, 'What needs to improve'),
       h('div', { class: 'grid g2' },

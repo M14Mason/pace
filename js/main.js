@@ -16,21 +16,24 @@ import * as speak from './views/speak.js';
 import * as settings from './views/settings.js';
 import * as placement from './views/placement.js';
 import * as records from './views/records.js';
+import * as today from './views/today.js';
+import * as practice from './views/practice.js';
+import * as courses from './views/courses.js';
+import * as you from './views/you.js';
+import { renderSession } from './session.js';
+import { migrateMastery } from './mastery.js';
+import { checkForUpdate, APP_VERSION } from './update.js';
 
 const ICON = {
-  home: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
-  sprint: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
-  learn: '<path d="M2 7l10-4 10 4-10 4z"/><path d="M6 9v5c0 2 3 3.5 6 3.5s6-1.5 6-3.5V9"/>',
-  finance: '<path d="M4 19V10M10 19V5M16 19v-7M22 19H2"/>',
-  prep: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
-  speak: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
-  log: '<path d="M5 4h11l3 3v13H5z"/><path d="M9 10h6M9 14h6"/>',
+  today: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  practice: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+  courses: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M8 7h7"/>',
+  you: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
 };
-const TABS = [
-  ['#/', 'Home', 'home'], ['#/sprint', 'Sprint', 'sprint'], ['#/learn', 'Learn', 'learn'],
-  ['#/finance', 'Finance', 'finance'], ['#/prep', 'Prep', 'prep'], ['#/speak', 'Speak', 'speak'], ['#/log', 'Log', 'log'],
-];
-const FULL = { '#/': 'Dashboard', '#/sprint': 'Math Sprint', '#/learn': 'Learn', '#/finance': 'Business & Finance', '#/prep': 'Prep', '#/speak': 'Speak', '#/log': 'Log' };
+const TABS = [['#/', 'Today', 'today'], ['#/practice', 'Practice', 'practice'], ['#/courses', 'Courses', 'courses'], ['#/you', 'You', 'you']];
+const FULL = { '#/': 'Today', '#/practice': 'Practice', '#/courses': 'Courses', '#/you': 'You' };
+// Which tab lights up for deeper pages.
+const TAB_OF = { '#/': '#/', '#/session': '#/', '#/practice': '#/practice', '#/sprint': '#/practice', '#/learn': '#/practice', '#/speak': '#/practice', '#/courses': '#/courses', '#/prep': '#/courses', '#/finance': '#/courses', '#/you': '#/you', '#/log': '#/you', '#/records': '#/you', '#/stats': '#/you', '#/settings': '#/you' };
 
 function navLinks(full) {
   return TABS.map(([href, label, ic]) => h('a', { href, 'data-href': href, class: 'nav-a' },
@@ -47,7 +50,7 @@ function moveDock(href) {
   const links = [...bar.querySelectorAll('.nav-a')];
   const prev = links.map(l => parseFloat(getComputedStyle(l).flexGrow) || 1);
   links.forEach(l => l.classList.toggle('on', l.dataset.href === href));
-  const target = links.map(l => (l.classList.contains('on') ? 3 : 1));
+  const target = links.map(l => (l.classList.contains('on') ? 2.3 : 1));
   links.forEach((l, i) => (l.style.flexGrow = target[i]));
   const on = links.find(l => l.classList.contains('on'));
   if (window.gsap) gsap.to(ind, { opacity: on ? 1 : 0, duration: 0.2 }); else ind.style.opacity = on ? 1 : 0;
@@ -64,8 +67,13 @@ function moveDock(href) {
 addEventListener('resize', () => { dockReady = false; moveDock($('#tabbar .nav-a.on')?.dataset.href || '#/'); });
 
 const routes = [
-  [/^#\/?$/, dashboard.render],
-  [/^#\/sprint(?:\/(.*))?$/, sprint.render],
+  [/^#\/?$/, today.render],
+  [/^#\/session(?:\/(.*))?$/, renderSession],
+  [/^#\/practice$/, practice.render],
+  [/^#\/courses$/, courses.render],
+  [/^#\/you$/, you.render],
+  [/^#\/stats$/, dashboard.render],
+  [/^#\/sprint(?:\/(.*))?$/, practice.render],
   [/^#\/learn(?:\/(.*))?$/, learn.render],
   [/^#\/finance(?:\/(.*))?$/, finance.render],
   [/^#\/prep(?:\/(.*))?$/, prep.render],
@@ -90,8 +98,9 @@ async function route() {
   document.body.classList.toggle('in-round', hash === '#/round' || hash === '#/placement');
   view.innerHTML = '';
   const base = '#/' + (hash.split('/')[1] || '');
-  document.querySelectorAll('#nav .nav-a').forEach(a => a.classList.toggle('on', a.dataset.href === base));
-  moveDock(base);
+  const tab = TAB_OF[base] || '#/';
+  document.querySelectorAll('#nav .nav-a').forEach(a => a.classList.toggle('on', a.dataset.href === tab));
+  moveDock(hash === '#/round' || hash === '#/placement' ? null : tab);
   for (const [re, fn] of routes) {
     const m = hash.match(re);
     if (m) {
@@ -101,7 +110,7 @@ async function route() {
       catch (e) { console.error(e); page.append(h('div', { class: 'card' }, h('h3', {}, 'Something broke on this page'), h('pre', { class: 'err' }, String(e.stack || e)))); }
       pageIn(page);
       setTimeout(() => page.isConnected && reveal(page), 900); // after pageIn finishes, so its clearProps cannot wipe tilt/reveal state
-      bgMood(hash === '#/round' ? 'round' : hash.startsWith('#/records') ? 'records' : ({ '#/': 'home', '#/sprint': 'sprint', '#/learn': 'learn', '#/finance': 'finance', '#/prep': 'prep', '#/speak': 'speak', '#/log': 'log' })[base] || 'home');
+      bgMood(hash === '#/round' ? 'round' : hash.startsWith('#/records') ? 'records' : ({ '#/': 'home', '#/practice': 'sprint', '#/sprint': 'sprint', '#/learn': 'learn', '#/courses': 'prep', '#/finance': 'finance', '#/prep': 'prep', '#/speak': 'speak', '#/you': 'log', '#/log': 'log' })[base] || 'home');
       break;
     }
   }
@@ -113,6 +122,9 @@ addEventListener('hashchange', route);
 
 // boot
 initBackground($('#bg'));
+migrateMastery(); // v2: levels from practice, old gates removed - all data kept
+setTimeout(checkForUpdate, 3000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
 if (!S().profile.placementDone && !location.hash) location.hash = '#/placement';
 route();
 scheduleReminders();

@@ -35,7 +35,7 @@ function build(c, u) {
   };
 }
 
-export function renderReading(root, { c, u, back, area, tags }) {
+export function renderReading(root, { c, u, back, area, tags, section = null, onDone = null }) {
   const key = readKey(c, u);
   const R = build(c, u);
   const marks = ((S().marks ||= {})[key] ||= { ts: 0, m: {} });
@@ -101,6 +101,7 @@ export function renderReading(root, { c, u, back, area, tags }) {
 
   const body = h('div', { class: 'reading' });
   R.s.forEach(([heading, ...paras], si) => {
+    if (section != null && si !== section) return;
     body.append(h('h3', { class: 'reading-h' }, heading), ...paras.map((t, pi) => para(t, `${si}.${pi}`)));
     if (si === 0 && R.examples[0]) body.append(exampleBlock(R.examples[0]));
     if (si === R.s.length - 1) R.examples.slice(1).forEach(ex => body.append(exampleBlock(ex)));
@@ -110,14 +111,15 @@ export function renderReading(root, { c, u, back, area, tags }) {
   const sumTa = h('textarea', { class: 'input', rows: 4, placeholder: 'In your own words: what are the 3 most important ideas, and how do they connect?' }, (S().summaries || {})[key] || '');
   sumTa.oninput = () => { (S().summaries ||= {})[key] = sumTa.value; save(); };
   const fb = h('div');
-  const finish = h('button', { class: 'btn primary wide' }, readDone(c, u) ? 'Reading done ✓ - go practice' : 'Finish reading → unlock practice');
+  const finish = h('button', { class: 'btn primary wide' }, readDone(c, u) ? 'Reading done ✓' : 'Finish reading ✓');
   finish.onclick = async () => {
-    if (sumTa.value.trim().split(/\s+/).length < 12) return toast('Write your summary first (2-3 sentences) - it\'s what makes it stick.');
+    const wrote = sumTa.value.trim().split(/\s+/).length >= 8;
     (S().readDone ||= {})[key] = Date.now();
     recordActivity({ area, ms: Date.now() - t0, req: c.ap ? 'ap' : null });
-    autoLog('reflection', `${c.short} · ${u.t} - my summary:\n${sumTa.value.trim()}`, [c.id, u.id], 'sum:' + key);
+    if (wrote) autoLog('reflection', `${c.short} · ${u.t} - my summary:\n${sumTa.value.trim()}`, [c.id, u.id], 'sum:' + key);
     save();
-    if (hasAI() && !fb.dataset.done) {
+    if (onDone) { onDone(); return; }
+    if (wrote && hasAI() && !fb.dataset.done) {
       fb.dataset.done = 1; finish.disabled = true; finish.textContent = 'Checking your summary…';
       try {
         const g = await gradeShort({ context: `${c.name}: ${u.t}. Key ideas: ${R.recap.join(' | ')}`, question: 'Summarize the most important ideas of this reading in your own words.', answer: sumTa.value, key: R.recap.join(' ') });
@@ -128,9 +130,24 @@ export function renderReading(root, { c, u, back, area, tags }) {
       return;
     }
     location.hash = back;
-    setTimeout(() => toast('Reading done - practice is unlocked', 'good'), 400);
+    setTimeout(() => toast('Reading done ✓', 'good'), 400);
   };
 
+  // Bite-size mode (daily session): one section, then continue. The last part adds recap + summary.
+  if (section != null) {
+    const last = section >= R.s.length - 1;
+    const cont = h('button', { class: 'btn primary wide big' }, last ? 'Finish ✓' : 'Continue ✓');
+    if (!last) cont.onclick = () => { ((S().readProg ||= {})[key] = section + 1); recordActivity({ area, ms: Date.now() - t0, req: c.ap ? 'ap' : null }); save(); onDone && onDone(); };
+    else cont.onclick = finish.onclick;
+    root.append(h('div', { class: 'lesson' },
+      h('div', { class: 'page-head' }, h('div', {}, h('a', { href: back, class: 'muted small' }, '← Back'), h('h1', {}, u.t), h('div', { class: 'sub' }, `${c.short} · part ${section + 1} of ${R.s.length}`))),
+      section === 0 ? h('div', { class: 'lesson-step' }, h('h3', {}, 'Why this matters'), h('p', { html: md(R.why) }), h('h3', { style: { marginTop: '12px' } }, 'Keep these in mind'), h('ol', {}, ...R.guide.map(g => h('li', { html: md(g) })))) : null,
+      h('div', { class: 'pen-sticky' }, penBar),
+      body,
+      last ? h('div', { class: 'lesson-step' }, h('h3', {}, 'Recap'), h('ul', { class: 'keybox' }, ...R.recap.map(k => h('li', { html: md(k) }))), h('h3', { style: { marginTop: '12px' } }, 'Optional: your summary'), sumTa) : null,
+      cont));
+    return;
+  }
   root.append(h('div', { class: 'lesson' },
     h('div', { class: 'page-head' }, h('div', {}, h('a', { href: back, class: 'muted small' }, '← Unit'), h('h1', {}, u.t), h('div', { class: 'sub' }, `${c.name} · Read & annotate`))),
     h('div', { class: 'lesson-step' }, h('h3', {}, 'Why this matters'), h('p', { html: md(R.why) }),

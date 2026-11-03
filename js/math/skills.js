@@ -11,7 +11,10 @@ const gcd = (a, b) => (b ? gcd(b, a % b) : Math.abs(a));
 const fr = (n, d) => { const g = gcd(n, d); return d / g === 1 ? String(n / g) : `${n / g}/${d / g}`; };
 const near = (a, ...offs) => offs.map(o => m2(a + o)).filter(x => x !== a && x >= 0);
 
+// No-op steps ("+ 0", "0 × n = 0") confuse more than they help - drop them.
+const useful = st => { const f = st.filter(x => !/(^|\s)0 [×x] \d+ = 0\b|[+−-] 0 = /.test(x)); return f.length ? f : st; };
 function Q(q, a, steps, hints, dist, extra = {}) {
+  steps = useful(steps);
   return { q, a, steps, hints, dist: [...new Set(dist.map(String))].filter(d => d !== String(a)).slice(0, 3), ...extra };
 }
 
@@ -31,6 +34,7 @@ export const SKILLS = [
       else if (L === 7) { a = rnd(1200, 8999); b = rnd(120, 899); }
       else { a = cents(2, 30); b = cents(2, 30); c = cents(2, 30); const s = m2(a + b + c); return Q(`${$(a)} + ${$(b)} + ${$(c)}`, s, [`Dollars: ${Math.floor(a)}+${Math.floor(b)}+${Math.floor(c)} = ${Math.floor(a) + Math.floor(b) + Math.floor(c)}`, `Cents total: ${Math.round((a % 1 + b % 1 + c % 1) * 100)}¢`, `Total ${$(s)}`], ['Group dollars, then cents.', 'Look for cents that pair to 100 (e.g. 35¢ + 65¢).', `Dollars: ${Math.floor(a) + Math.floor(b) + Math.floor(c)}. Add the cents.`], near(s, 1, -1, 0.1), { unit: '$' }); }
       const s = a + b, tens = Math.floor(b / 10) * 10;
+      if (b < 10) return Q(`${a} + ${b}`, s, [`Make a ten: ${a} + ${10 - (a % 10)} = ${a + 10 - (a % 10)}`, `then add the remaining ${b - (10 - (a % 10)) >= 0 ? b - (10 - (a % 10)) : 0}`, `= ${s}`].slice(b >= 10 - (a % 10) ? 0 : 2), ['Count on from the bigger number.', b >= 10 - (a % 10) ? `Make a ten: ${a} needs ${10 - (a % 10)} to reach ${a + 10 - (a % 10)}.` : `Just count up ${b} from ${a}.`, `Start at ${a} and count up ${b}.`], near(s, 1, -1, 10));
       return Q(`${a} + ${b}`, s, [tens ? `${a} + ${tens} = ${a + tens}` : `${a} + ${b}`, tens ? `${a + tens} + ${b - tens} = ${s}` : `= ${s}`], ['Break the second number into tens and ones.', b % 10 >= 7 ? `Round ${b} up to ${Math.ceil(b / 10) * 10}, then subtract ${Math.ceil(b / 10) * 10 - b}.` : 'Add the biggest place value first.', tens ? `${a} + ${tens} = ${a + tens}. Now add ${b - tens}.` : `Count up from ${a}.`], near(s, 10, -10, 1, -1));
     },
   },
@@ -66,7 +70,10 @@ export const SKILLS = [
       else if (L === 6) { a = rnd(11, 25); b = rnd(11, 19); }
       else if (L === 7) { a = cents(1, 15); b = rnd(3, 9); const s = m2(a * b); return Q(`${b} items at ${$(a)} each`, s, [`${b} × $${Math.floor(a)} = $${b * Math.floor(a)}`, `${b} × ${Math.round(a % 1 * 100)}¢ = ${$(m2(b * (a % 1)))}`, `Total ${$(s)}`], ['Total = quantity × price.', a % 1 > 0.9 ? `Round ${$(a)} up to ${$(Math.ceil(a))}, multiply, then subtract ${b} × ${Math.round((Math.ceil(a) - a) * 100)}¢.` : 'Multiply the dollars, then the cents, then add.', `Dollars part: ${b} × ${Math.floor(a)} = ${b * Math.floor(a)}.`], near(s, b, -b, 1), { unit: '$' }); }
       else { a = rnd(21, 79); b = rnd(21, 49); }
+      if (a <= 12 && b <= 12) { if (a === 10 || b === 10) { const s = a * b, o = a === 10 ? b : a; return Q(`${a} × ${b}`, s, [`× 10: write a zero after ${o}`, `= ${s}`], ['Times 10 just adds a zero.', `Take ${o} and put a 0 on the end.`, `${o} → ${s}`], near(s, o, -o, 10)); }
+        const s = a * b, prev = a > 1 ? (a - 1) * b : b; return Q(`${a} × ${b}`, s, [`${a} groups of ${b}`, a > 1 ? `${a - 1} × ${b} = ${prev}, plus one more ${b} = ${s}` : `= ${s}`], ['It\'s a times-table fact - try to recall it.', a > 1 ? `Use a fact you know: ${a - 1} × ${b} = ${prev}, then add one more ${b}.` : 'Anything × 1 is itself.', b % 2 === 0 ? `Or double ${a} × ${b / 2} = ${a * b / 2}.` : `Skip-count by ${b}: ${Array.from({ length: Math.min(a, 4) }, (_, k) => (k + 1) * b).join(', ')}…`], near(s, b, -b, a)); }
       const s = a * b, t = Math.floor(a / 10) * 10;
+      if (a % 10 === 0) return Q(`${a} × ${b}`, s, [`${a / 10} × ${b} = ${a / 10 * b}`, `add the zero back: ${s}`], ['Drop the zero, multiply, put the zero back.', `${a / 10} × ${b} first.`, `${a / 10} × ${b} = ${a / 10 * b}. Now add a 0.`], near(s, b * 10, -b * 10, b));
       return Q(`${a} × ${b}`, s, [`${t} × ${b} = ${t * b}`, `${a - t} × ${b} = ${(a - t) * b}`, `${t * b} + ${(a - t) * b} = ${s}`], ['Break a factor into tens and ones (distributive property).', `Do ${t} × ${b}, then ${a - t} × ${b}, then add.`, `${t} × ${b} = ${t * b}. Now ${a - t} × ${b}.`], near(s, b, -b, a, 10));
     },
   },
@@ -264,13 +271,23 @@ function shuffleArr(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math
 export function check(q, input) {
   const raw = String(input).trim().replace(/[$,%\s]/g, '');
   if (q.mc || q.kind === 'choice') return String(input) === String(q.a);
+  q._note = '';
+  const val = s => { const m = String(s).match(/^(-?\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)$/); return m ? +m[1] / +m[2] : Number(s); };
   if (q.kind === 'frac') {
-    const norm = s => { const m = s.match(/^(-?\d+)\/(\d+)$/); if (!m) return isFinite(+s) ? s : null; const g = gcd(+m[1], +m[2]); return +m[2] / g === 1 ? String(+m[1] / g) : `${+m[1] / g}/${+m[2] / g}`; };
-    return norm(raw) === norm(String(q.a)) && /^-?\d+(\/\d+)?$/.test(raw) && (raw.includes('/') ? gcd(+raw.split('/')[0], +raw.split('/')[1]) === 1 : true);
+    // any equivalent value counts (6/8, 0.75, 3/4); unsimplified answers get a tip, not a miss
+    const want = val(String(q.a)), got = val(raw);
+    if (!isFinite(got) || raw === '' || Math.abs(got - want) > 1e-6) return false;
+    const m = raw.match(/^(-?\d+)\/(\d+)$/);
+    if (m && gcd(+m[1], +m[2]) !== 1) q._note = `Right! Simplest form: ${q.a}`;
+    else if (!raw.includes('/') && String(q.a).includes('/')) q._note = `Right! As a fraction: ${q.a}`;
+    return true;
   }
-  const n = Number(raw);
+  const n = val(raw);
   if (!isFinite(n) || raw === '') return false;
-  return Math.abs(n - Number(q.a)) <= (q.tol ?? 0.0001) + 1e-9;
+  const a = Number(q.a), tol = Math.max(q.tol ?? 0.0001, q.unit === '$' ? 0.011 : 0) + 1e-9;
+  if (Math.abs(n - a) <= tol) return true;
+  if (q.unit === '%' && Math.abs(n * 100 - a) <= tol) { q._note = `Right! Written as a percent: ${a}%`; return true; }
+  return false;
 }
 
 export function fmtAns(q) {

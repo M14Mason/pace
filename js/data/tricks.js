@@ -25,6 +25,7 @@ export const TRICKS = {
   mul: {
     title: 'Multiplication',
     tricks: [
+      ['Build from a fact you know', 'Stuck on a times-table fact? Step from a neighbor you know: 7 × 8 = 7 × 7 + 7. Doubles help too: 6 × 8 = double 3 × 8.', '7 × 8 → 49 + 7 → **56**'],
       ['Split one factor', 'Break the harder number into tens and ones, multiply each part, then add (the distributive property).', '14 × 6 → 10×6 + 4×6 = 60 + 24 → **84**'],
       ['Round and subtract', 'Round up to an easy number, multiply, then subtract the extra.', '19 × 7 → 20×7 = 140, − 7 → **133**'],
       ['Double and halve', 'Halve one number and double the other. The product stays the same.', '16 × 25 → 8 × 50 → 4 × 100 → **400**'],

@@ -24,3 +24,11 @@ Then open http://localhost:8000.
 - `js/ntfy.js`: phone reminders through ntfy
 
 Investing content is education and simulated practice only. It is not financial advice.
+
+## Updating
+
+On your phone, just open Pace. When a new version is live, an **"Update ready"** banner appears at the top. Tap it and you're done. Your data is never touched, because it lives in your phone's browser storage, not in the app's code.
+
+If you don't see the banner, close Pace completely (swipe it away) and open it again.
+
+The design rationale is in [docs/DESIGN.md](docs/DESIGN.md).

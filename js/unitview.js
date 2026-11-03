@@ -36,7 +36,7 @@ export function renderUnit(root, { c, u, base, back, area, req, label }) {
     } catch (e) { toast(aiErrorText(e), 'bad'); genBtn.disabled = false; genBtn.textContent = '✦ Generate 8 more with Claude'; }
   };
   const read = readDone(c, u);
-  const lock = h('p', { class: 'small muted' }, '🔒 Practice unlocks after you read the unit. Learn it first, then test it.');
+  const lock = h('p', { class: 'small muted' }, 'Tip: reading first makes practice much easier.');
   const frqs = [...(u.frq || []), ...((c.frqTemplates || []).filter(() => u === c.units[0]))];
   root.append(
     h('div', { class: 'page-head' }, h('div', {}, h('a', { href: back, class: 'muted small' }, '← Back'), h('h1', {}, u.t), h('div', { class: 'sub' }, u.topics || ''))),
@@ -47,8 +47,8 @@ export function renderUnit(root, { c, u, base, back, area, req, label }) {
       card('Unit readiness', h('div', { class: 'stack' }, h('div', { class: 'kpi-v' }, pct(r)), bar(r, { cls: r > 0.75 ? 'good' : '' }), h('div', { class: 'small muted' }, `${(u.lessons || []).length} lesson(s) · ${fixedCount} bank questions${u.gen ? ' + endless generated practice' : ''}`))),
       card(read ? 'Step 2 · Practice' : 'Practice', h('div', { class: 'stack' },
         read ? null : lock,
-        h('button', { class: 'btn primary wide', disabled: !read, onclick: () => run('unit-practice', 8, 0) }, 'Practice · 8 questions'),
-        h('button', { class: 'btn wide', disabled: !read, onclick: () => run('unit-test', Math.min(15, Math.max(8, fixedCount + (u.gen ? 6 : 0))), c.ap ? 60000 : 50000) }, `Timed unit test · ${c.ap ? '60s' : '50s'}/question pace`),
+        h('button', { class: 'btn primary wide', onclick: () => run('unit-practice', 8, 0) }, 'Practice · 8 questions'),
+        h('button', { class: 'btn wide', onclick: () => run('unit-test', Math.min(15, Math.max(8, fixedCount + (u.gen ? 6 : 0))), c.ap ? 60000 : 50000) }, `Timed unit test · ${c.ap ? '60s' : '50s'}/question pace`),
         genBtn))),
     card('Lessons', h('div', { class: 'unit-list' }, ...(u.lessons || []).map((l, i) => {
       const k = lessonKey(c, u, l); const d = S().lessons[k];

@@ -37,11 +37,10 @@ export function correct(el) {
   G().fromTo(el, { scale: 1 }, { scale: 1.035, duration: 0.11, yoyo: true, repeat: 1, ease: 'power2.out' });
   flash(el, 'var(--good)');
 }
+// Wrong answers get a quiet, neutral cue - no buzzer, no red, no shake. Misses are normal.
 export function wrong(el) {
-  sfx.bad(); bgPulse('bad');
   if (!G() || !el) return;
-  G().fromTo(el, { x: 0 }, { x: 7, duration: 0.05, repeat: 5, yoyo: true, ease: 'none', clearProps: 'x' });
-  flash(el, 'var(--bad)');
+  G().fromTo(el, { opacity: 0.55 }, { opacity: 1, duration: 0.35, ease: 'power2.out' });
 }
 function flash(el, color) {
   const f = h('div', { class: 'flash', style: { background: color } });
