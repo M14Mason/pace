@@ -16,10 +16,11 @@ Then open http://localhost:8000.
 
 - `js/main.js`: router, navigation, boot
 - `js/store.js`: local persistence, streaks, Pace Score, spaced repetition
-- `js/quiz.js`: round engine (finish the round, then clear every miss with escalating hints)
-- `js/math/skills.js`: 13 Math Sprint skills × 8 levels, each with speed targets
+- `js/quiz.js`: round engine (adaptive difficulty, instant "here's how" feedback, hints on demand)
+- `js/session.js`: the daily guided session; `js/mastery.js`: leveling from practice
+- `js/math/skills.js`: 13 math skills × 8 levels, each with a speed target
 - `js/data/*`: course units, lessons, question banks, and generators
-- `js/views/*`: Dashboard, Sprint, Learn, Business & Finance, Prep, Speak, Log, Settings, Placement
+- `js/views/*`: Today, Practice, Courses, You, plus the deeper pages (course units, readings, finance, Speak, Log, Settings)
 - `js/ai.js`: Claude API (grading, judging, speech analysis, question generation)
 - `js/ntfy.js`: phone reminders through ntfy
 
