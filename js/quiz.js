@@ -15,6 +15,7 @@ import { cardsFromRepeatedMisses } from './views/cards.js';
 import { TRICKS } from './data/tricks.js';
 import { READINGS } from './data/readings/index.js';
 import { COURSE } from './data/courses.js';
+import { decaxUnit } from './data/decaexam.js';
 import { recordMathAnswer } from './mastery.js';
 
 const finishers = {};
@@ -39,8 +40,8 @@ function buildCoach(questions) {
   for (const uk of [...new Set(questions.map(unitKey).filter(Boolean))]) {
     if (taught[uk]) continue;
     const r = READINGS[uk]; if (!r) continue;
-    const [cid, uid] = uk.split('/'); const c = COURSE[cid]; const u = c && c.units.find(x => x.id === uid);
-    out.push({ key: uk, title: c ? `${c.short} · ${u ? u.t : ''}` : 'Before you start', tips: [...Object.values(r.notes || {}), ...r.recap].slice(0, 4) });
+    const [cid, uid] = uk.split('/'); const c = COURSE[cid]; const u = c ? c.units.find(x => x.id === uid) : cid === 'decax' ? decaxUnit(uid) : null;
+    out.push({ key: uk, title: c ? `${c.short} · ${u ? u.t : ''}` : u ? u.t : 'Before you start', tips: [...Object.values(r.notes || {}), ...r.recap].slice(0, 4) });
   }
   return out.slice(0, 3);
 }

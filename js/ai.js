@@ -169,6 +169,24 @@ Score each PI 0-14 (DECA scale: 0-3 little/no, 4-7 below, 8-11 meets, 12-14 exce
     }), { effort: 'high', feature: 'roleplay' });
 }
 
+// DECA Financial Consulting: score against the official Presentation Evaluation Form.
+export function judgeConsult({ scenario, client, rubric, response }) {
+  return askJSON(
+    `You are a DECA judge for the Financial Consulting Event, playing the client. Score this consultation exactly like the official Presentation Evaluation Form.
+EVENT SCENARIO: ${scenario}
+CLIENT (you): ${client}
+RUBRIC (item: max points):\n${rubric.map(r => `${r.n}. ${r.t} (0-${r.max}): ${r.d}`).join('\n')}
+Bands for 15-point items: Novice 0-5, Developing 6-10, Proficient 11-14, Exemplary 15. For 5-point items: 0-1, 2-3, 4, 5.
+Items 8-10 (delivery, design, impression) can only be partly judged from a transcript: judge them from what the words show and say so briefly.
+Check the finance for accuracy (valuation, exit options, taxes, retirement income) and flag anything wrong or overpromised.
+CONSULTATION (spoken or written):\n${response}\n
+Then write 3 tough follow-up questions this judge would ask, a stronger line they could have said, and the top 3 fixes. Be encouraging and specific - quote their words.`,
+    obj({
+      items: arr(obj({ n: int, score: int, why: str })),
+      total: int, accuracy: arr(str), judgeQs: arr(str), strongerLine: str, fixes: arr(str),
+    }), { effort: 'high', feature: 'roleplay' });
+}
+
 export function analyzeSpeech({ prompt, transcript, metrics, lang = 'en' }) {
   return askJSON(
     `Analyse this ${lang === 'es' ? 'Spanish' : 'English'} spoken answer for ARTICULATION - how precisely, clearly and fluently the student expresses ideas (not the topic itself). The student wants to genuinely improve wording for interviews, DECA roleplays, class and everyday explaining.

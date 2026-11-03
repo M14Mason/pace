@@ -4,5 +4,6 @@ import term2 from './term2.js';
 import ap11 from './ap11.js';
 import later from './later.js';
 import finance from './finance.js';
+import deca from './deca.js';
 
-export const READINGS = { ...apwh, ...term2, ...ap11, ...later, ...finance };
+export const READINGS = { ...apwh, ...term2, ...ap11, ...later, ...finance, ...deca };

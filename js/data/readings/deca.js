@@ -1,0 +1,120 @@
+// DECA Finance Cluster Exam areas + Financial Consulting readings (keyed "decax/<area>").
+export default {
+  'decax/fa1': {
+    why: 'Financial Analysis is about 30% of the exam, the biggest area by far. Half of it is personal-finance thinking: what money does, how interest grows, and how people plan.',
+    guide: ['What is the time value of money?', 'How do you work out the cost of credit quickly?', 'What goes into retirement and estate planning?'],
+    s: [
+      ['Money and its time value', 'Money has three functions: **medium of exchange** (you buy with it), **unit of measure** (prices are in dollars) and **store of value** (you can save it). A dollar today is worth more than a dollar next year because it can earn a return - that\'s the **time value of money**.', 'Shortcut: the **Rule of 72**. Years to double ≈ 72 ÷ the interest rate. At 8%, money doubles in about 9 years.'],
+      ['Credit, budgets and net worth', 'The **cost of credit** is the interest and fees you pay to borrow. Monthly card interest ≈ APR ÷ 12 × balance. A lower rate and a shorter term both cut the total cost.', 'A **budget** plans income and expenses; **net worth** = assets − liabilities. Goals should be **SMART**: specific, measurable, achievable, relevant, time-bound.'],
+      ['Planning ahead', '**Retirement planning** uses accounts like a 401(k), traditional IRA (tax break now, taxed later) and Roth IRA (taxed now, tax-free later). **Estate planning** decides what happens to assets after death: a **will**, beneficiaries, sometimes a **trust**.', '**Insurance needs** come from the risks you face and what a loss would cost. Stocks = ownership; bonds = loans to the issuer.'],
+    ],
+    notes: { 'time value of money': 'This shows up on the exam as both a concept question and a calculation.', 'Rule of 72': 'Works for anything that grows at a steady rate, including inflation: at 3% inflation, prices double in about 24 years.', 'trust': 'Trusts can avoid probate and control how heirs receive money.' },
+    recall: [['What are the three functions of money?', 'Medium of exchange, unit of measure, store of value.'], ['At 9%, about how long to double?', '8 years (72 ÷ 9).'], ['Roth vs traditional IRA?', 'Roth: taxed now, tax-free later. Traditional: tax break now, taxed later.']],
+    recap: ['Money: exchange, measure, store.', 'Rule of 72 for doubling.', 'Net worth = assets − liabilities.', 'Roth vs traditional; will and trust for estates.'],
+  },
+  'decax/fa2': {
+    why: 'The other half of Financial Analysis is business finance: reading the three statements, knowing where money is traded, and the costs managers use to decide.',
+    guide: ['What does each financial statement show?', 'What is the difference between money and capital markets?', 'Which costs matter for a decision?'],
+    s: [
+      ['The statements', 'The **income statement** shows profit over a period: revenue − cost of goods sold = **gross profit**, then subtract operating expenses, interest and taxes to get **net income**. The **balance sheet** is a snapshot on one date: **assets = liabilities + equity**. The **cash flow statement** splits cash into operating, investing (equipment) and financing (loans, stock). The **statement of changes in equity** shows how owners\' equity moved (profit added, dividends paid).', 'Ratios turn statements into answers. **Current ratio** = current assets ÷ current liabilities (above 1 means the company can cover short-term bills).'],
+      ['Institutions and markets', 'Banks, credit unions, insurers and brokerages are **financial institutions**. The **money market** trades short-term debt (under a year); the **capital market** trades long-term stocks and bonds. When interest rates rise, existing bond prices fall.'],
+      ['Managerial accounting', 'Managers classify costs to decide well. **Direct costs** trace to one product; **indirect costs** (overhead) are shared and must be allocated. **Sunk costs** are already spent and should be ignored. **Marginal analysis** asks whether one more unit adds more benefit than cost. **Variance analysis** compares budget with actual results.'],
+    ],
+    notes: { 'assets = liabilities + equity': 'If a question says "balance," think of this equation.', 'Sunk costs': 'Classic trap: "We already spent $50k, so we have to finish." That money is gone either way.', 'Variance analysis': 'Unfavorable variance = spent more or earned less than planned.' },
+    recall: [['Which statement is a snapshot on one date?', 'Balance sheet.'], ['Where does buying equipment show on the cash flow statement?', 'Investing activities.'], ['Rates rise - what happens to existing bond prices?', 'They fall.']],
+    recap: ['Income statement = profit over time; balance sheet = snapshot.', 'Cash flow: operating, investing, financing.', 'Money market short-term; capital market long-term.', 'Ignore sunk costs; compare marginal benefit and cost.'],
+  },
+  'decax/pd': {
+    why: 'Professional Development is about 15% of the exam. This year it leans heavily on corporate governance and ethics, plus careers in finance.',
+    guide: ['What makes a company well governed?', 'How do you spot a conflict of interest?', 'What are the steps of a good decision?'],
+    s: [
+      ['Corporate governance', '**Corporate governance** is the system of checks on management. The **board of directors** oversees executives for the shareholders. **Internal audit** checks processes from inside; an **external audit** independently verifies the financial statements. **Transparency** means honest, timely reporting to stakeholders. Every employee helps by following policy and reporting concerns through proper channels.'],
+      ['Ethics in finance', 'A **conflict of interest** happens when your interest competes with your client\'s. A **fiduciary** must put the client first. A quick ethics test: is it legal, is it fair to everyone, and would I be comfortable if it were public?'],
+      ['Careers and decisions', 'Finance pathways: accounting, banking, corporate finance, insurance, and securities & investments. Build relationships through networking, mentors and professional associations.', 'Decision process: **define the problem** → gather information → list options → choose → act → evaluate.'],
+    ],
+    notes: { 'board of directors': 'Independent board members (not employees) make oversight stronger.', 'fiduciary': 'You\'ll use this word in the Financial Consulting event too.', 'define the problem': 'Exam answer for "first step" is almost always this.' },
+    recall: [['Who oversees management for the shareholders?', 'The board of directors.'], ['What is an external audit for?', 'An independent check that the statements are accurate.'], ['First step in decision-making?', 'Define the problem.']],
+    recap: ['Governance = checks on management: board, audits, transparency.', 'Conflict of interest vs fiduciary duty.', 'Five finance career pathways.', 'Define → gather → options → choose → act → evaluate.'],
+  },
+  'decax/fm': {
+    why: 'Financial-Information Management (about 12% at the higher levels) is accounting used for decisions: honest records, budgets, analysis and newer methods like ABC and lean.',
+    guide: ['What does the financial-information function do?', 'How do lenders analyze a customer?', 'What are ABC, lean and Six Sigma?'],
+    s: [
+      ['The function and its ethics', 'The **financial-information management** function collects, analyzes and reports financial data so leaders can decide. U.S. companies follow **GAAP**. Ethics is non-negotiable: recording revenue early or hiding expenses misleads investors and can be fraud. Cloud software and automation make records faster and shared, but controls still matter.'],
+      ['Analyzing customers', 'Lenders judge a borrower with the **5 C\'s**: character (history), **capacity** (cash flow to repay), capital (own money invested), collateral (pledged assets) and conditions (purpose and economy).'],
+      ['Newer uses of financial data', '**Activity-based costing** assigns overhead by the activities that drive it. **Lean** removes waste from processes. **Six Sigma** reduces defects and variation. **Sustainability reporting** shows environmental and social impact.'],
+    ],
+    notes: { 'GAAP': 'Public companies are also audited against GAAP.', 'capacity': 'Debt-to-income ratio is the usual capacity measure.', 'Activity-based costing': 'Example: a product that needs lots of setups gets more of the setup overhead.' },
+    recall: [['Name the 5 C\'s of credit.', 'Character, capacity, capital, collateral, conditions.'], ['Lean vs Six Sigma?', 'Lean cuts waste; Six Sigma cuts defects.'], ['What is GAAP?', 'The standard U.S. accounting rules.']],
+    recap: ['FIM = data → analysis → decisions, done ethically.', '5 C\'s of credit.', 'ABC, lean, Six Sigma, sustainability reporting.'],
+  },
+  'decax/rm': {
+    why: 'Risk Management grows from 6 to 9 questions at higher levels, and it ties directly to the Financial Consulting event (protecting a client\'s business and family).',
+    guide: ['What are the four ways to handle a risk?', 'What is enterprise risk management?', 'What are internal controls?'],
+    s: [
+      ['Four responses', 'Every risk gets one of four responses: **avoid** (stop the activity), **reduce** (training, cameras), **transfer** (insurance, contracts) or **retain** (pay small losses yourself, high deductibles). **Pure risk** has only a loss or no loss (fire); **speculative risk** can also gain (investing). Insurance covers pure risk.'],
+      ['Seeing the whole picture', '**Enterprise risk management (ERM)** manages all of an organization\'s risks together: financial, operational, strategic and compliance. A **risk assessment** rates each risk by likelihood and impact to set priorities.', '**Internal controls** prevent and catch problems: segregation of duties, approvals, reconciliations and audits. External controls include regulators and outside auditors. Technology helps by flagging unusual transactions.'],
+    ],
+    notes: { 'transfer': 'For business owners, a buy-sell agreement funded by life insurance is a classic risk transfer.', 'segregation of duties': 'One person shouldn\'t be able to both record and move the money.' },
+    recall: [['Insurance is which response?', 'Transfer.'], ['What two things does a risk assessment rate?', 'Likelihood and impact.'], ['Example of an internal control?', 'Segregation of duties.']],
+    recap: ['Avoid, reduce, transfer, retain.', 'Pure vs speculative risk.', 'ERM = all risks together.', 'Internal controls: split duties, approvals, audits.'],
+  },
+  'decax/law': {
+    why: 'Business Law is about 7 questions. Most ask which law or agency applies, what makes a contract valid, or which ownership form fits.',
+    guide: ['What makes a contract valid?', 'Which ownership forms limit liability?', 'Who regulates what in finance?'],
+    s: [
+      ['Contracts, torts and agency', 'A valid **contract** needs offer, acceptance, **consideration** (something of value each way), capacity and legality. A **tort** is a civil wrong like negligence. In an **agency relationship**, an agent acts for a principal, as an advisor does for a client. Secured loans are backed by **collateral** the lender can take.'],
+      ['Ownership', 'Sole proprietorships and general partnerships have **unlimited liability**: the owner\'s personal assets are at risk. **LLCs** and corporations limit liability. How a business is sold (assets vs stock) changes taxes for buyer and seller.'],
+      ['Finance regulators', '**SEC** - securities and investor protection. **FINRA** - brokers. **FDIC** - insures bank deposits. **Sarbanes-Oxley** (2002) - accurate corporate reporting after Enron. **Dodd-Frank** (2010) - reforms after the 2008 crisis; created the **CFPB**. **Compliance** means following all of these plus internal policy.'],
+    ],
+    notes: { 'consideration': 'A promise with nothing in return is a gift, not a contract.', 'unlimited liability': 'This is why many owners form an LLC.', 'Sarbanes-Oxley': 'Also requires CEOs and CFOs to certify their financial statements.' },
+    recall: [['Five elements of a contract?', 'Offer, acceptance, consideration, capacity, legality.'], ['Who insures bank deposits?', 'FDIC.'], ['What law followed the 2008 crisis?', 'Dodd-Frank.']],
+    recap: ['Contract elements; tort; agency.', 'Unlimited vs limited liability.', 'SEC, FINRA, FDIC, SOX, Dodd-Frank/CFPB.'],
+  },
+  'decax/people': {
+    why: 'Emotional intelligence, customer relations and communication add up to about 13-19 questions. They\'re the easiest points on the test once you see the pattern.',
+    guide: ['What are the parts of emotional intelligence?', 'What do finance professionals owe clients?', 'What does active listening look like?'],
+    s: [
+      ['Emotional intelligence', '**Emotional intelligence** has four parts: self-awareness, self-management, social awareness (empathy) and relationship management (conflict, teamwork, leadership). In conflict, understand each side first and look for shared goals. Take feedback as information to improve.'],
+      ['Clients and communication', 'Finance professionals must be honest and act in the client\'s interest. **CRM** software tracks client history and follow-ups. **Active listening** means full attention, paraphrasing and clarifying questions. Written messages should be clear, specific and professional.', 'Exam pattern: pick the calm, respectful, honest answer that takes ownership. Avoid blaming, ignoring and extreme answers.'],
+    ],
+    notes: { 'Emotional intelligence': 'EI also shows in the Financial Consulting event: reading the client\'s feelings about selling.', 'Active listening': 'In your consultation, paraphrasing earns "Assessing needs" points.' },
+    recall: [['Four parts of EI?', 'Self-awareness, self-management, social awareness, relationship management.'], ['What does CRM do?', 'Tracks client information, history and follow-ups.'], ['Exam pattern for people questions?', 'Calm, respectful, honest, takes ownership.']],
+    recap: ['EI: self, self-management, social awareness, relationships.', 'Client first; CRM.', 'Active listening = paraphrase + clarify.'],
+  },
+  'decax/econ': {
+    why: 'Economics is 4-6 questions, mostly about how interest rates, inflation and the business cycle move markets.',
+    guide: ['What does the Fed do when inflation is high?', 'Monetary vs fiscal policy?', 'What are the business cycle phases?'],
+    s: [
+      ['Policy and prices', 'The **Federal Reserve** runs **monetary policy**: raising rates cools inflation, cutting rates helps in a recession. **Fiscal policy** is government taxing and spending. When demand rises and supply doesn\'t, prices rise. **Opportunity cost** is the next best option you gave up.'],
+      ['Cycles and markets', '**GDP** measures total output. The **business cycle** moves through expansion, peak, contraction and trough. Markets react to expected profits, so stocks often fall in recessions. **Financial globalization** links markets worldwide, so shocks spread faster.'],
+    ],
+    notes: { 'monetary policy': 'Monetary = money (the Fed). Fiscal = budget (Congress).', 'Opportunity cost': 'Also a great consulting idea: keeping the business has an opportunity cost.' },
+    recall: [['Inflation high - what does the Fed do?', 'Raises interest rates.'], ['Who controls fiscal policy?', 'Congress and the President (taxes and spending).'], ['Four business cycle phases?', 'Expansion, peak, contraction, trough.']],
+    recap: ['Fed: rates up to fight inflation.', 'Monetary vs fiscal.', 'Business cycle; GDP.', 'Globalization links markets.'],
+  },
+  'decax/ops': {
+    why: 'Operations and information management add about 9-12 questions: running things safely and efficiently, and protecting data.',
+    guide: ['What does operations management cover?', 'How do you protect financial data?', 'What are databases and spreadsheets for?'],
+    s: [
+      ['Operations', '**Operations** are the daily activities that produce and deliver the service: purchasing, scheduling, quality, safety and budgeting. Using several suppliers reduces disruption risk. Project managers plan with a **Gantt chart**.'],
+      ['Information management', 'Databases store records; spreadsheets analyze them (=SUM, =AVERAGE). Finance firms protect client data with **encryption**, **multi-factor authentication** and training. **Phishing** messages fake a trusted sender to steal logins - never share passwords and report it.'],
+    ],
+    notes: { 'Gantt chart': 'Also useful in a consultation: a succession timeline is basically a Gantt chart.', 'Phishing': 'Red flags: urgency, a link, a request for credentials.' },
+    recall: [['What is phishing?', 'A fake message that tries to steal login or personal info.'], ['What does MFA add?', 'A second proof of identity.'], ['What is a Gantt chart?', 'A timeline of project tasks.']],
+    recap: ['Operations = producing the service well.', 'Encryption, MFA, phishing awareness.', 'Databases store; spreadsheets analyze.'],
+  },
+  'decax/fce': {
+    why: 'This season\'s Financial Consulting client is a small-business owner in their late 50s planning retirement and succession. To consult well you need two things: the content (exit options, value, taxes, retirement income) and a process the judge can follow.',
+    guide: ['What are the ways an owner can exit a business?', 'How is a small business valued, and what raises the value?', 'How do you turn a sale into secure retirement income?'],
+    s: [
+      ['Exit options', 'An owner can **sell to an outside buyer**: a **strategic buyer** (competitor or related company, often pays more because of synergies) or a **financial buyer** (like private equity, focused on return). They can **transfer to family** (sale, gift or a mix). They can sell to insiders: a **management buyout** or an **ESOP** (employee stock ownership plan), which often protects jobs and legacy. Or they can **wind down**: sell the assets and close, which usually brings the least money.', '**Seller financing** (an installment sale) lets a buyer pay over years. It can make an insider deal possible and spread taxes, but the seller carries the risk of non-payment - protect it with a down payment, collateral and life insurance on the buyer.'],
+      ['Valuation and getting ready', 'Small businesses are usually valued at a **multiple of earnings** - seller\'s discretionary earnings (SDE) for smaller firms, EBITDA for bigger ones - or by assets if earnings are weak. Buyers pay more for clean financial statements, steady recurring revenue and a business that runs without the owner. That\'s why planning starts **3-5 years** before the exit: reduce owner dependence, train a successor and fix the books.', 'A **buy-sell agreement** sets the terms if an owner dies, becomes disabled or leaves; **life insurance** often funds it. A **will** or **trust** and updated beneficiaries handle the estate side.'],
+      ['From sale to retirement income', 'Map every income source: sale proceeds (after taxes), retirement accounts, Social Security (available from 62, more if delayed) and any consulting payments. A rough guideline for a sustainable withdrawal is the **4% rule**: about 4% of the portfolio in year one, adjusted for inflation. Owners over 50 can make **catch-up contributions** to retirement accounts before they sell. Plan **health insurance** until Medicare at 65.', 'Taxes: a long-held business is usually taxed at long-term capital gains rates, and the structure (asset vs stock sale, installments) changes what the owner keeps. A consultant coordinates with the client\'s CPA and attorney and doesn\'t promise specific tax results.'],
+      ['The consultation', 'The judge scores five content parts at 15 points each: **opening**, **assessing needs**, **positioning value** (feature → benefit → value tied to their needs), **solution recommendation** (with objection handling) and **closing & follow-up**. Five technique parts are worth 5 each: organization, effectiveness, delivery, presentation design and overall impression. Fifteen minutes in total, including the judge\'s questions.'],
+    ],
+    notes: { 'strategic buyer': 'If your client cares most about price, this is often the best fit. If they care about legacy, maybe not.', 'ESOP': 'ESOPs can carry tax advantages, but they\'re complex and costly to set up - better for companies with steady profits and 20+ employees.', 'multiple of earnings': 'Example: SDE $380k × 3 = about $1.1M. Industry multiples vary - always say "a professional valuation will confirm."', '4% rule': '$1.5M portfolio → about $60,000 in year one. It\'s a guideline, not a guarantee.', 'positioning value': 'The most-missed part: students list options but never connect them to what the client said.' },
+    recall: [['Name four exit paths.', 'Sell to an outside buyer, transfer to family, sell to insiders (MBO/ESOP), wind down.'], ['What raises a small business\'s sale price?', 'Clean financials, steady revenue, less dependence on the owner.'], ['What are the five 15-point parts of the rubric?', 'Opening, assessing needs, positioning value, recommendation, closing & follow-up.']],
+    recap: ['Exit: outside sale, family, insiders (MBO/ESOP), wind down.', 'Value = earnings × multiple; prepare 3-5 years ahead.', 'Retirement income: proceeds + accounts + Social Security; 4% rule; health insurance to 65.', 'Rubric: open, assess, value, recommend, close.'],
+  },
+};

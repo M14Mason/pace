@@ -12,6 +12,7 @@ import { dictate } from './speak.js';
 import * as market from './market.js';
 import { renderReading } from './reading.js';
 import * as fx from '../fx.js';
+import * as decax from './decax.js';
 
 export const FINC = { id: 'fin', name: 'Business & Finance', short: 'Finance', src: 'fin', units: FIN_UNITS };
 export const DECAC = { id: 'deca', name: 'DECA', short: 'DECA', src: 'deca', units: DECA.clusters };
@@ -146,6 +147,8 @@ function annotateNew(root) {
 
 // ---------- DECA ----------
 function deca(root, p) {
+  if (p[0] === 'exam') return decax.exam(root, p.slice(1));
+  if (p[0] === 'fce') return decax.fce(root, p.slice(1));
   if (p[0]) {
     const cl = DECA.clusters.find(x => x.id === p[0]); if (!cl) return (location.hash = '#/finance/deca');
     if (p[1] === 'read') return renderReading(root, { c: DECAC, u: cl, back: `#/finance/deca/${cl.id}`, area: 'deca', tags: ['deca', cl.id] });
@@ -161,6 +164,13 @@ function deca(root, p) {
     return;
   }
   root.append(h('div', { class: 'page-head' }, h('div', {}, h('a', { href: '#/finance', class: 'muted small' }, '← Business & Finance'), h('h1', {}, 'DECA'), h('div', { class: 'sub' }, 'Finance this year, Business Management & Administration next.'))),
+    h('h3', { class: 'section-h' }, 'This year · Finance'),
+    h('div', { class: 'grid g2', style: { marginBottom: '12px' } },
+      h('a', { class: 'tile', href: '#/finance/deca/exam' }, h('div', { class: 'tile-top' }, h('div', { class: 'tile-ic' }, '📘'), h('span', { class: 'chip acc' }, `${pct(decax.examReadiness())} ready`)),
+        h('h4', {}, 'Learn the Finance exam'), h('div', { class: 'muted' }, '9 areas weighted like the real test · readings, tricks, mock exams'), h('div', { style: { marginTop: '10px' } }, bar(decax.examReadiness()))),
+      h('a', { class: 'tile', href: '#/finance/deca/fce' }, h('div', { class: 'tile-top' }, h('div', { class: 'tile-ic' }, '🤝'), h('span', { class: 'chip acc' }, `${pct(decax.fceReadiness())} ready`)),
+        h('h4', {}, 'Financial Consulting practice'), h('div', { class: 'muted' }, '2026-27 case: retirement & succession · plan, present, get judged'), h('div', { style: { marginTop: '10px' } }, bar(decax.fceReadiness())))),
+    h('h3', { class: 'section-h' }, 'Roleplay events'),
     h('div', { class: 'disclaimer', style: { marginBottom: '12px' } }, DECA.note),
     h('div', { class: 'grid g2' }, ...DECA.clusters.map(cl => h('a', { class: 'tile', href: `#/finance/deca/${cl.id}` },
       h('div', { class: 'tile-top' }, h('div', { class: 'tile-ic' }, cl.id === 'fin' ? '$' : 'M'), h('span', { class: 'chip acc' }, `${pct(unitReadiness(DECAC, cl))} ready`)),

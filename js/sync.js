@@ -100,7 +100,7 @@ export function mergeShared(L, R) {
   for (const k of ['apiKey', 'ntfyTopic', 'name']) out.profile[k] ||= pl[k] || pr[k] || '';
   out.profile.placementDone = !!(pl.placementDone || pr.placementDone);
   for (const list of ['log', 'events', 'speak', 'cards', 'customArticles', 'records']) out[list] = byId(L[list], R[list], deleted);
-  for (const list of ['missLog', 'frqLog', 'roleplays']) out[list] = [...(L[list] || []), ...(R[list] || [])].filter((x, i, a) => a.findIndex(y => y.ts === x.ts && JSON.stringify(y) === JSON.stringify(x)) === i).sort((a, b) => b.ts - a.ts).slice(0, 100);
+  for (const list of ['missLog', 'frqLog', 'roleplays', 'fceRuns']) out[list] = [...(L[list] || []), ...(R[list] || [])].filter((x, i, a) => a.findIndex(y => y.ts === x.ts && JSON.stringify(y) === JSON.stringify(x)) === i).sort((a, b) => b.ts - a.ts).slice(0, 100);
   // skills: higher level wins; keep all rounds; best = fastest
   out.skills = {};
   for (const id of new Set([...Object.keys(L.skills || {}), ...Object.keys(R.skills || {})])) {

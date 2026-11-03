@@ -4,6 +4,7 @@ import { S, save, uid } from './store.js';
 import { fromBank } from './quiz.js';
 import { COURSE } from './data/courses.js';
 import { FIN_UNITS, DECA } from './data/finance.js';
+import { decaxUnit } from './data/decaexam.js';
 import { makeQ } from './math/skills.js';
 import { scenarioQ, PACK } from './math/scenarios.js';
 import { factorQ, TYPE as FTYPE } from './math/factor.js';
@@ -12,6 +13,7 @@ import { shuffle } from './ui.js';
 function unitOf(src, cid, uid_) {
   if (src === 'fin') return FIN_UNITS.find(u => u.id === uid_);
   if (src === 'deca') return DECA.clusters.find(u => u.id === uid_);
+  if (src === 'decax') return decaxUnit(uid_);
   const c = COURSE[cid]; return c && c.units.find(u => u.id === uid_);
 }
 
@@ -45,7 +47,7 @@ export function resolveKey(key) {
   if (key.startsWith('math:')) { const [, skill, L] = key.split(':'); return { ...makeQ(skill, +L, 'free'), key, srs: true }; }
   const [cid, uidv, idx] = rest.split('/');
   if (kind === 'a') { const b = (S().aiBank[`${cid}/${uidv}`] || [])[idx]; if (b) return { ...fromBank(b, key), srs: true, src: cid }; }
-  const src = cid === 'fin' ? 'fin' : cid === 'deca' ? 'deca' : 'course';
+  const src = ['fin', 'deca', 'decax'].includes(cid) ? cid : 'course';
   const u = unitOf(src, cid, uidv);
   if (!u) return null;
   if (kind === 'q' && u.qs && u.qs[idx]) return { ...fromBank(u.qs[idx], key), srs: true, src: cid };
