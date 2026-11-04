@@ -413,7 +413,7 @@ details.later > summary { cursor: pointer; list-style: none; }
 .step.cur .step-dot { background: var(--accent); color: #fff; }
 .step.done .step-dot { background: var(--good); color: #fff; }
 .step-t { font-weight: 600; font-size: 14.5px; }
-.quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0; }
+.quick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 12px 0; }
 .quick-a { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 4px; border-radius: 16px; background: var(--card); box-shadow: var(--shadow); text-decoration: none; font-size: 12px; font-weight: 600; text-align: center; }
 .quick-ic { font-size: 20px; }
 .skill-list { display: flex; flex-direction: column; gap: 8px; }
@@ -450,3 +450,10 @@ details.later > summary { cursor: pointer; list-style: none; }
 .fin-scen { padding-top: 12px; border-top: 1px dashed var(--line); }
 .fin-scen:first-child { padding-top: 0; border-top: 0; }
 .fin-stage .choices { margin-top: 0; }
+
+/* Memory */
+.mem-rules { display: flex; flex-direction: column; gap: 10px; padding-left: 20px; margin: 0; font-size: 14px; line-height: 1.45; }
+.mem-spots { columns: 2; padding-left: 20px; margin: 0; line-height: 1.7; }
+.mem-pairs { display: flex; flex-direction: column; gap: 8px; }
+.mem-pairs > div { padding: 8px 10px; background: var(--card2); border-radius: 12px; }
+.card2 { background: var(--card2); }

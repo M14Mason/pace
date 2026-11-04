@@ -1,12 +1,17 @@
 // Flashcards: from a photo of notes, pasted notes, a Quizlet export, or automatically
 // from questions missed twice. Reviewed with the same spaced-repetition schedule.
-import { S, save, uid, srsReview, dueItems, recordActivity, removeById, today } from '../store.js';
+import { S, save, uid, srsReview, dueItems, recordActivity, removeById, today, addDays } from '../store.js';
 import { h, card, toast, md, seg, modal } from '../ui.js';
 import { hasAI, cardsFromNotes, imageBlock, aiErrorText } from '../ai.js';
 import * as fx from '../fx.js';
 
 export const cardKey = c => `card:${c.id}`;
 export const dueCards = () => { const due = new Set(dueItems(k => k.startsWith('card:')).map(i => i.key)); return S().cards.filter(c => due.has(cardKey(c)) || !S().srs[cardKey(c)]); };
+
+// New cards first come back tomorrow (a 1-day gap beats same-day cramming).
+export function scheduleTomorrow(c) {
+  S().srs[cardKey(c)] ||= { due: addDays(today(), 1), ivl: 1, ease: 2.4, reps: 0, lapses: 0, src: 'cards', ts: Date.now() };
+}
 
 export function addCards(deck, list, src) {
   const now = Date.now();
@@ -94,22 +99,23 @@ function browse(deck) {
   modal(h('div', { class: 'stack' }, h('h2', {}, deck), list));
 }
 
-function study(root, deck) {
+export function study(root, deck, opts = {}) {
+  const back = opts.back || '#/learn/cards';
   let queue = (deck ? S().cards.filter(c => c.deck === deck) : dueCards());
-  if (!queue.length) queue = deck ? [] : [...S().cards];
-  queue = queue.sort(() => Math.random() - 0.5).slice(0, 30);
+  if (!queue.length && !opts.limit) queue = deck ? [] : [...S().cards];
+  queue = queue.sort(() => Math.random() - 0.5).slice(0, opts.limit || 30);
   const t0 = Date.now();
   let i = 0, flipped = false, right = 0;
   const stage = h('div', { class: 'stack' });
   root.append(h('div', { class: 'round' },
-    h('div', { class: 'round-top' }, h('a', { class: 'icon-btn', href: '#/learn/cards' }, '✕'), h('div', { class: 'round-title' }, deck || 'Due cards'), h('div', { class: 'round-clock', id: 'cardcount' }, '')), stage));
+    h('div', { class: 'round-top' }, h('a', { class: 'icon-btn', href: back }, '✕'), h('div', { class: 'round-title' }, deck || 'Due cards'), h('div', { class: 'round-clock', id: 'cardcount' }, '')), stage));
   const onKey = e => { if (e.key === ' ') { e.preventDefault(); flip(); } else if (flipped && '1234'.includes(e.key)) grade(+e.key - 1); };
   addEventListener('keydown', onKey);
   const done = () => {
     removeEventListener('keydown', onKey);
     recordActivity({ area: 'review', ms: Date.now() - t0, q: queue.length, correct: right });
     stage.innerHTML = '';
-    stage.append(h('div', { class: 'summary' }, h('div', { class: 'sum-score' }, h('span', { class: 'big' }, `${right}/${queue.length}`), h('span', {}, 'remembered')), h('a', { class: 'btn primary wide', href: '#/learn/cards' }, 'Done')));
+    stage.append(h('div', { class: 'summary' }, h('div', { class: 'sum-score' }, h('span', { class: 'big' }, `${right}/${queue.length}`), h('span', {}, 'remembered')), opts.onDone ? h('button', { class: 'btn primary wide', onclick: opts.onDone }, 'Continue ▶') : h('a', { class: 'btn primary wide', href: back }, 'Done')));
   };
   function flip() {
     if (flipped) return; flipped = true;
@@ -138,7 +144,7 @@ function study(root, deck) {
       h('button', { class: 'btn primary wide flip-btn', onclick: flip }, 'Show answer (space)'));
     fx.pop(stage.firstChild);
   }
-  if (!queue.length) { stage.append(h('p', { class: 'empty' }, 'No cards here yet.')); return () => removeEventListener('keydown', onKey); }
+  if (!queue.length) { stage.append(h('p', { class: 'empty' }, 'No cards here yet.'), opts.onDone ? h('button', { class: 'btn primary wide', onclick: opts.onDone }, 'Continue ▶') : null); return () => removeEventListener('keydown', onKey); }
   show();
   return () => removeEventListener('keydown', onKey);
 }

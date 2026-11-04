@@ -263,6 +263,15 @@ Rules: one fact or idea per card; fronts are questions or cues (not just a word 
     obj({ deck: str, cards: arr(obj({ front: str, back: str })) }), { effort: 'medium', maxTokens: 12000, feature: 'cards' });
 }
 
+// "Remember it": turn one thing the student explained in their own words into 1-4 recall questions.
+export function memoryCards({ cue, text, link }) {
+  return askJSON(`The student just learned something and explained it in their own words. Write 1-4 short recall flashcards that make them retrieve the key idea(s) from memory later.
+Rules: questions, not "define X" unless that is the point; one idea per card; backs under 25 words, in plain words close to theirs; if their explanation contains a factual error, put the correct version on the back and start the back with "Note:". Fewer cards is better than filler.
+TOPIC: ${cue}
+THEIR EXPLANATION: """${String(text).slice(0, 4000)}"""${link ? `\nWHAT IT CONNECTS TO (their words): """${String(link).slice(0, 1000)}"""` : ''}`,
+    obj({ cards: arr(obj({ front: str, back: str })) }), { effort: 'low', maxTokens: 2000, feature: 'cards' });
+}
+
 export function homeworkHelp({ text, image, subject }) {
   return askJSON(withImage(
     `A student needs help with a ${subject} homework problem${image ? ' (photo above)' : ''}. They learn best like this: understand the why, then a worked path broken into small steps, with a HINT before any answer. Do NOT just give the final answer up front.

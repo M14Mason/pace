@@ -20,6 +20,7 @@ import * as today from './views/today.js';
 import * as practice from './views/practice.js';
 import * as courses from './views/courses.js';
 import * as you from './views/you.js';
+import * as memory from './views/memory.js';
 import { renderSession } from './session.js';
 import { migrateMastery } from './mastery.js';
 import { checkForUpdate, APP_VERSION } from './update.js';
@@ -34,7 +35,7 @@ const ICON = {
 const TABS = [['#/', 'Today', 'today'], ['#/practice', 'Practice', 'practice'], ['#/courses', 'Courses', 'courses'], ['#/finance', 'Finance', 'finance'], ['#/you', 'You', 'you']];
 const FULL = { '#/': 'Today', '#/practice': 'Practice', '#/courses': 'Courses', '#/finance': 'Finance', '#/you': 'You' };
 // Which tab lights up for deeper pages.
-const TAB_OF = { '#/': '#/', '#/session': '#/', '#/practice': '#/practice', '#/sprint': '#/practice', '#/learn': '#/practice', '#/speak': '#/practice', '#/courses': '#/courses', '#/prep': '#/courses', '#/finance': '#/finance', '#/you': '#/you', '#/log': '#/you', '#/records': '#/you', '#/stats': '#/you', '#/settings': '#/you' };
+const TAB_OF = { '#/': '#/', '#/session': '#/', '#/practice': '#/practice', '#/sprint': '#/practice', '#/learn': '#/practice', '#/memory': '#/practice', '#/speak': '#/practice', '#/courses': '#/courses', '#/prep': '#/courses', '#/finance': '#/finance', '#/you': '#/you', '#/log': '#/you', '#/records': '#/you', '#/stats': '#/you', '#/settings': '#/you' };
 
 function navLinks(full) {
   return TABS.map(([href, label, ic]) => h('a', { href, 'data-href': href, class: 'nav-a' },
@@ -77,6 +78,7 @@ const routes = [
   [/^#\/sprint(?:\/(.*))?$/, practice.render],
   [/^#\/learn(?:\/(.*))?$/, learn.render],
   [/^#\/finance(?:\/(.*))?$/, finance.render],
+  [/^#\/memory(?:\/(.*))?$/, memory.render],
   [/^#\/prep(?:\/(.*))?$/, prep.render],
   [/^#\/log(?:\/(.*))?$/, log.render],
   [/^#\/speak(?:\/(.*))?$/, speak.render],
@@ -111,7 +113,7 @@ async function route() {
       catch (e) { console.error(e); page.append(h('div', { class: 'card' }, h('h3', {}, 'Something broke on this page'), h('pre', { class: 'err' }, String(e.stack || e)))); }
       pageIn(page);
       setTimeout(() => page.isConnected && reveal(page), 900); // after pageIn finishes, so its clearProps cannot wipe tilt/reveal state
-      bgMood(hash === '#/round' ? 'round' : hash.startsWith('#/records') ? 'records' : ({ '#/': 'home', '#/practice': 'sprint', '#/sprint': 'sprint', '#/learn': 'learn', '#/courses': 'prep', '#/finance': 'finance', '#/prep': 'prep', '#/speak': 'speak', '#/you': 'log', '#/log': 'log' })[base] || 'home');
+      bgMood(hash === '#/round' ? 'round' : hash.startsWith('#/records') ? 'records' : ({ '#/': 'home', '#/practice': 'sprint', '#/sprint': 'sprint', '#/learn': 'learn', '#/memory': 'learn', '#/courses': 'prep', '#/finance': 'finance', '#/prep': 'prep', '#/speak': 'speak', '#/you': 'log', '#/log': 'log' })[base] || 'home');
       break;
     }
   }

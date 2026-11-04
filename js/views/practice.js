@@ -8,6 +8,7 @@ import { skillState, levelProgress } from '../mastery.js';
 import { dailyQuestions } from './sprint.js';
 import { trickSheet } from '../data/tricks.js';
 import { reviewRound } from './dashboard.js';
+import { dueCards } from './cards.js';
 
 onRoundFinish('practice', () => { location.hash = '#/practice'; });
 
@@ -23,7 +24,8 @@ export function render(root) {
     h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Practice'), h('div', { class: 'sub' }, 'Pick anything. Levels go up as you practice - no tests to pass.'))),
     h('div', { class: 'grid g2' },
       h('button', { class: 'tile big-tile', onclick: quickMix }, h('div', { class: 'tile-ic' }, '⚡'), h('h4', {}, 'Quick math'), h('div', { class: 'muted' }, '10 mixed questions that adapt to you')),
-      h('button', { class: 'tile big-tile', disabled: !due, onclick: () => reviewRound(dueItems(k => !k.startsWith('card:'))) }, h('div', { class: 'tile-ic' }, '↻'), h('h4', {}, 'Review'), h('div', { class: 'muted' }, due ? `${due} ready - things you missed before` : 'Nothing due right now'))),
+      h('button', { class: 'tile big-tile', disabled: !due, onclick: () => reviewRound(dueItems(k => !k.startsWith('card:'))) }, h('div', { class: 'tile-ic' }, '↻'), h('h4', {}, 'Review'), h('div', { class: 'muted' }, due ? `${due} ready - things you missed before` : 'Nothing due right now')),
+      h('a', { class: 'tile big-tile', href: '#/memory', style: { gridColumn: '1 / -1' } }, h('div', { class: 'tile-top' }, h('div', { class: 'tile-ic' }, '🧠'), dueCards().length ? h('span', { class: 'chip gold' }, `${dueCards().length} cards due`) : null), h('h4', {}, 'Memory'), h('div', { class: 'muted' }, 'Remember anything you hear: capture it, recall it, keep it. Plus the memory palace.'))),
     h('h3', { class: 'section-h' }, 'Math skills'),
     h('div', { class: 'skill-list' }, ...SKILLS.map(s => {
       const st = skillState(s.id);

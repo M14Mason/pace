@@ -11,6 +11,7 @@ import { unitPool, buildSet, resolveKey } from './pool.js';
 import * as fx from './fx.js';
 import { renderReading } from './views/reading.js';
 import { COURSE } from './data/courses.js';
+import { dueCards, study } from './views/cards.js';
 
 const apCourse = () => byPriority().find(c => c.ap);
 function nextAPStep() {
@@ -35,6 +36,8 @@ export function planToday() {
   if (due.length) steps.push({ type: 'round', build: 'review', label: `Quick review · ${Math.min(5, due.length)} things you missed before`, mins: 2 });
   const fdue = dueItems(isFinKey);
   if (fdue.length) steps.push({ type: 'round', build: 'finance', label: `Finance review · ${Math.min(6, fdue.length)} cards so it sticks`, mins: 3 });
+  const cdue = dueCards().length;
+  if (cdue) steps.push({ type: 'cards', label: `Memory · recall ${Math.min(8, cdue)} flashcards`, mins: 2 });
   return steps;
 }
 
@@ -50,6 +53,7 @@ export function runNext() {
   const step = ss.steps[ss.i];
   if (!step) { location.hash = '#/session'; return; }
   if (step.type === 'read') { location.hash = `#/session/read`; return; }
+  if (step.type === 'cards') { if (!dueCards().length) { stepDone(); return runNext(); } location.hash = `#/session/cards`; return; }
   let qs = [], title = step.label.split(' · ')[0], area = 'math', req = 'math', tags = ['math'];
   if (step.build === 'math') qs = dailyQuestions(8);
   else if (step.build === 'ap') {
@@ -80,6 +84,7 @@ export function renderSession(root, p = []) {
     const c = COURSE[step.cid], u = c.units.find(x => x.id === step.uid);
     return renderReading(root, { c, u, back: '#/', area: c.id, tags: [c.id, u.id], section: step.section, onDone: () => { stepDone(); location.hash = '#/session'; } });
   }
+  if (p[0] === 'cards' && step && step.type === 'cards') return study(root, null, { limit: 8, back: '#/session', onDone: () => { stepDone(); location.hash = '#/session'; } });
   if (ss.i >= ss.steps.length) {
     root.append(h('div', { class: 'done-wrap' },
       h('div', { class: 'done-badge' }, '✓'),
@@ -87,6 +92,7 @@ export function renderSession(root, p = []) {
       h('p', { class: 'muted' }, 'That counts toward your week. Come back tomorrow - or keep going if you want.'),
       h('div', { class: 'stack', style: { width: '100%', maxWidth: '360px' } },
         h('a', { class: 'btn primary wide big', href: '#/' }, 'Back to Today'),
+        h('a', { class: 'btn wide', href: '#/memory/add' }, '🧠 Learned something today? Remember it (1 min)'),
         h('a', { class: 'btn wide', href: '#/practice' }, 'Bonus practice'))));
     requestAnimationFrame(() => { fx.levelUp('Session complete', 'Nice work today'); });
     return;
