@@ -444,3 +444,9 @@ details.later > summary { cursor: pointer; list-style: none; }
 .big-tile h4 { font-size: 17px; }
 .update-banner { position: fixed; z-index: 90; top: max(10px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: min(calc(100% - 24px), 460px); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 12px 16px; border-radius: 18px; background: var(--ink); color: var(--bg); text-align: left; box-shadow: 0 16px 34px -12px rgba(0, 0, 0, .45); }
 .update-cta { margin-left: auto; font-weight: 700; color: #9fb0ff; }
+
+/* Finance tab */
+.fin-formula { font: 600 14.5px/1.5 var(--num); background: var(--card2); border-radius: 12px; padding: 10px 12px; overflow-x: auto; }
+.fin-scen { padding-top: 12px; border-top: 1px dashed var(--line); }
+.fin-scen:first-child { padding-top: 0; border-top: 0; }
+.fin-stage .choices { margin-top: 0; }

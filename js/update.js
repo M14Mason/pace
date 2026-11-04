@@ -1,7 +1,7 @@
 // Easy updates: the app checks version.json and shows a one-tap "Update" banner.
 // Updating only swaps the code - your data (localStorage + IndexedDB) is never touched.
 import { h } from './ui.js';
-export const APP_VERSION = '2.1.0';
+export const APP_VERSION = '2.2.0';
 
 let shown = false;
 export async function checkForUpdate() {

@@ -28,12 +28,13 @@ const ICON = {
   today: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
   practice: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
   courses: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M8 7h7"/>',
+  finance: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
   you: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
 };
-const TABS = [['#/', 'Today', 'today'], ['#/practice', 'Practice', 'practice'], ['#/courses', 'Courses', 'courses'], ['#/you', 'You', 'you']];
-const FULL = { '#/': 'Today', '#/practice': 'Practice', '#/courses': 'Courses', '#/you': 'You' };
+const TABS = [['#/', 'Today', 'today'], ['#/practice', 'Practice', 'practice'], ['#/courses', 'Courses', 'courses'], ['#/finance', 'Finance', 'finance'], ['#/you', 'You', 'you']];
+const FULL = { '#/': 'Today', '#/practice': 'Practice', '#/courses': 'Courses', '#/finance': 'Finance', '#/you': 'You' };
 // Which tab lights up for deeper pages.
-const TAB_OF = { '#/': '#/', '#/session': '#/', '#/practice': '#/practice', '#/sprint': '#/practice', '#/learn': '#/practice', '#/speak': '#/practice', '#/courses': '#/courses', '#/prep': '#/courses', '#/finance': '#/courses', '#/you': '#/you', '#/log': '#/you', '#/records': '#/you', '#/stats': '#/you', '#/settings': '#/you' };
+const TAB_OF = { '#/': '#/', '#/session': '#/', '#/practice': '#/practice', '#/sprint': '#/practice', '#/learn': '#/practice', '#/speak': '#/practice', '#/courses': '#/courses', '#/prep': '#/courses', '#/finance': '#/finance', '#/you': '#/you', '#/log': '#/you', '#/records': '#/you', '#/stats': '#/you', '#/settings': '#/you' };
 
 function navLinks(full) {
   return TABS.map(([href, label, ic]) => h('a', { href, 'data-href': href, class: 'nav-a' },

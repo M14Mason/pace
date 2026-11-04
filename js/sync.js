@@ -122,6 +122,7 @@ export function mergeShared(L, R) {
   perKey('courseTerms', (a, b) => a || b);
   perKey('readDone', (a, b) => Math.max(a || 0, b || 0) || undefined);
   perKey('marks', (a, b) => newest(a, b));
+  perKey('fin', (a, b) => (!a || !b ? a || b : { ...b, ...a, done: Math.min(a.done || Infinity, b.done || Infinity) === Infinity ? undefined : Math.min(a.done || Infinity, b.done || Infinity), stage: Math.max(a.stage || 1, b.stage || 1), explain: (a.explain || '').length >= (b.explain || '').length ? a.explain : b.explain }));
   perKey('summaries', (a, b) => (a && b ? (a.length >= b.length ? a : b) : a || b));
   perKey('aiUsage', (a, b) => newest(a, b, x => x?.updatedAt || 0)); // one entry per device
   return out;

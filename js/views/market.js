@@ -12,7 +12,7 @@ import * as fx from '../fx.js';
 
 ['market-q', 'company-q'].forEach(k => onRoundFinish(k, res => { location.hash = res.meta.back; setTimeout(() => toast(`${Math.round(res.acc * 100)}% · misses go to review`, res.acc >= 0.8 ? 'good' : ''), 400); }));
 
-const back = h => h('a', { href: '#/finance', class: 'muted small' }, '← Business & Finance');
+const back = h => h('a', { href: '#/finance', class: 'muted small' }, '← Finance');
 const disc = () => h('div', { class: 'disclaimer', style: { marginBottom: '12px' } }, DISCLAIMER.replace('Companies in cases and articles are fictional.', 'Live data is pulled by Claude via web search - double-check anything important.'));
 const needKey = () => card('', h('p', {}, 'This uses Claude with live web search. Add your Claude API key in Settings first.'));
 // Store generated questions in the finance AI bank so misses can come back in spaced review.

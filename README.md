@@ -21,6 +21,7 @@ Then open http://localhost:8000.
 - `js/math/skills.js`: 13 math skills × 8 levels, each with a speed target
 - `js/data/*`: course units, lessons, question banks, and generators
 - `js/views/*`: Today, Practice, Courses, You, plus the deeper pages (course units, readings, finance, Speak, Log, Settings)
+- `js/data/fin/*` + `js/views/fin.js`: the Finance tab (Fundamentals, Advanced, Capstone, DECA)
 - `js/ai.js`: Claude API (grading, judging, speech analysis, question generation)
 - `js/ntfy.js`: phone reminders through ntfy
 

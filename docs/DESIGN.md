@@ -24,3 +24,20 @@ A skill levels up when 8 of your last 10 answers at your current level are corre
 
 ## Updates
 `version.json` holds the latest version. When it changes, the app shows an "Update ready" banner, and tapping it reloads the new code. Your data lives in browser storage, so updating never touches it.
+
+## Finance tab (v2.2)
+
+Four levels - Fundamentals, Advanced, Capstone, DECA - with 107 concepts. Each concept runs the same six steps:
+
+| Step | What happens | Why (research) |
+|---|---|---|
+| 1 Guess first | One unscored question before teaching | Prequestions improve learning of the targeted content, especially when you generate an answer (St. Hilaire et al., 2024 meta-analysis) |
+| 2 Learn it | Plain definition, why it exists, analogy, formula, memory hook | Elaboration: connecting new ideas to what you already know |
+| 3 Show me how | Worked example revealed step by step | Worked examples before practice reduce cognitive load for novices |
+| 4 Your turn | Generated problems + concept checks, hints on demand, calm "here's why" | Retrieval practice with immediate, explanatory feedback |
+| 5 Real scenarios | The same idea in a small business, a big company, your own money and a DECA roleplay | Varied contexts and comparing cases are what make far transfer possible |
+| 6 Lock it in | Explain it back, "spot it in real life," links to related concepts | Self-explanation; deliberately connecting ideas across domains |
+
+After that, every question enters spaced review (first in ~2 days, then 5, then weeks). The daily Start session adds a short, interleaved Finance review. A concept earns ★ "remembered" once at least two of its cards have been recalled on separate later reviews - a light version of successive relearning (Rawson & Dunlosky).
+
+Reassignments: Time value of money, simple and compound interest, and present value moved into Fundamentals (they power NPV and DCF) and are still listed under DECA. Debt refinancing moved from Capstone to Advanced. Added: balance sheet, income statement, present value, comparable company analysis, banks, retirement accounts, budgeting & net worth. Fixed: DECA "performance indicators" are the skills judges score, not profit ratios; Modigliani-Miller is described with its no-tax and with-tax versions and the trade-off theory.

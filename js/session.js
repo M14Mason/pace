@@ -1,5 +1,6 @@
 // Today's session: one button, ~15 minutes, no decisions.
 // warm-up math (adaptive) -> AP: next reading section (or unit practice once read) -> spaced review.
+import { isFinKey } from './data/fin/index.js';
 import { S, save, today, dueItems } from './store.js';
 import { h, toast } from './ui.js';
 import { startRound, onRoundFinish } from './quiz.js';
@@ -30,8 +31,10 @@ export function planToday() {
     { type: 'round', build: 'math', label: 'Math warm-up · 8 questions that adapt to you', mins: 3 },
     nextAPStep(),
   ];
-  const due = dueItems(k => !k.startsWith('card:'));
+  const due = dueItems(k => !k.startsWith('card:') && !isFinKey(k));
   if (due.length) steps.push({ type: 'round', build: 'review', label: `Quick review · ${Math.min(5, due.length)} things you missed before`, mins: 2 });
+  const fdue = dueItems(isFinKey);
+  if (fdue.length) steps.push({ type: 'round', build: 'finance', label: `Finance review · ${Math.min(6, fdue.length)} cards so it sticks`, mins: 3 });
   return steps;
 }
 
@@ -53,7 +56,10 @@ export function runNext() {
     const c = byPriority().find(x => x.id === step.cid); const u = c.units.find(x => x.id === step.uid);
     qs = buildSet(unitPool(c, u), 6); area = c.id; req = 'ap'; tags = [c.id, u.id];
   } else if (step.build === 'review') {
-    qs = dueItems(k => !k.startsWith('card:')).sort(() => Math.random() - 0.5).slice(0, 5).map(i => resolveKey(i.key)).filter(Boolean); area = 'review'; req = null; tags = ['review'];
+    qs = dueItems(k => !k.startsWith('card:') && !isFinKey(k)).sort(() => Math.random() - 0.5).slice(0, 5).map(i => resolveKey(i.key)).filter(Boolean); area = 'review'; req = null; tags = ['review'];
+  } else if (step.build === 'finance') {
+    // interleaved: most-overdue first, mixed across concepts
+    qs = dueItems(isFinKey).sort((a, b) => (a.due < b.due ? -1 : 1)).slice(0, 6).sort(() => Math.random() - 0.5).map(i => resolveKey(i.key)).filter(Boolean); area = 'finance'; req = null; tags = ['finance'];
   }
   if (!qs.length) { stepDone(); return runNext(); }
   startRound({ kind: 'session-step', title, questions: qs, area, req, tags, meta: { back: '#/session' } });

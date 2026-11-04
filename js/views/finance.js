@@ -13,6 +13,7 @@ import * as market from './market.js';
 import { renderReading } from './reading.js';
 import * as fx from '../fx.js';
 import * as decax from './decax.js';
+import * as fin from './fin.js';
 
 export const FINC = { id: 'fin', name: 'Business & Finance', short: 'Finance', src: 'fin', units: FIN_UNITS };
 export const DECAC = { id: 'deca', name: 'DECA', short: 'DECA', src: 'deca', units: DECA.clusters };
@@ -23,11 +24,11 @@ onRoundFinish('anno-q', res => { location.hash = res.meta.back; setTimeout(() =>
 export function render(root, p) {
   const disc = h('div', { class: 'disclaimer', style: { marginBottom: '12px' } }, DISCLAIMER);
   if (p[0] === 'unit') {
-    const u = FIN_UNITS.find(x => x.id === p[1]); if (!u) return (location.hash = '#/finance');
+    const u = FIN_UNITS.find(x => x.id === p[1]); if (!u) return (location.hash = '#/finance/classic');
     if (p[2] === 'read') return renderReading(root, { c: FINC, u, back: `#/finance/unit/${u.id}`, area: 'finance', tags: ['finance', u.id] });
     if (p[2] === 'lesson') { const l = u.lessons.find(x => x.id === p[3]); return renderLesson(root, { lesson: l, key: lessonKey(FINC, u, l), back: `#/finance/unit/${u.id}`, title: 'Business & Finance', sub: u.t, check: buildSet(unitPool(FINC, u, 'fin'), 3), area: 'finance', tags: ['finance', u.id] }); }
     root.append(disc);
-    return renderUnit(root, { c: FINC, u, base: `#/finance/unit/${u.id}`, back: '#/finance', area: 'finance', label: 'Finance' });
+    return renderUnit(root, { c: FINC, u, base: `#/finance/unit/${u.id}`, back: '#/finance/classic', area: 'finance', label: 'Finance' });
   }
   if (p[0] === 'deca') return deca(root, p.slice(1));
   if (p[0] === 'case') return caseView(root, p[1]);
@@ -36,7 +37,10 @@ export function render(root, p) {
   if (p[0] === 'market') return market.brief(root);
   if (p[0] === 'company') return market.company(root);
   if (p[0] === 'pitch') return market.pitch(root, p[1] ? decodeURIComponent(p[1]) : '');
-  return hub(root, disc);
+  if (p[0] === 'l') return fin.level(root, p[1]);
+  if (p[0] === 'c') return fin.concept(root, p[1]);
+  if (p[0] === 'classic') return hub(root, disc);
+  return fin.hub(root);
 }
 
 function hub(root, disc) {
@@ -44,7 +48,7 @@ function hub(root, disc) {
   const setTab = t => { S().finTab = t; save(); root.innerHTML = ''; hub(root, disc); };
   const total = FIN_UNITS.reduce((a, u) => a + unitReadiness(FINC, u), 0) / FIN_UNITS.length;
   root.append(
-    h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Business & Finance'), h('div', { class: 'sub' }, `Internship-ready finance · ${pct(total)} through the core track`))),
+    h('div', { class: 'page-head' }, h('div', {}, h('a', { href: '#/finance', class: 'muted small' }, '← Finance'), h('h1', {}, 'Cases & original lessons'), h('div', { class: 'sub' }, `Your earlier finance track · ${pct(total)} through it`))),
     disc,
     h('div', { class: 'grid g3', style: { marginBottom: '12px' } },
       h('a', { class: 'tile', href: '#/finance/market' }, h('div', { class: 'tile-ic' }, '📈'), h('h4', {}, 'Market brief'), h('div', { class: 'muted' }, 'What moved and why, then a concept quiz')),
@@ -85,7 +89,7 @@ function caseView(root, id) {
     btn.disabled = false; btn.textContent = 'Grade again';
   };
   root.append(h('div', { class: 'lesson' },
-    h('div', { class: 'page-head' }, h('div', {}, h('a', { href: '#/finance', class: 'muted small' }, '← Business & Finance'), h('h1', {}, c.t), h('div', { class: 'sub' }, c.tag))),
+    h('div', { class: 'page-head' }, h('div', {}, h('a', { href: '#/finance/classic', class: 'muted small' }, '← Cases & lessons'), h('h1', {}, c.t), h('div', { class: 'sub' }, c.tag))),
     h('div', { class: 'lesson-step' }, h('h3', {}, 'The situation'), h('p', {}, c.setup)),
     h('div', { class: 'lesson-step' }, h('h3', {}, 'Step 1 · Run the numbers'), h('p', { class: 'small muted' }, 'Three questions. Misses come back with hints.'),
       h('button', { class: 'btn primary', onclick: () => startRound({ kind: 'case-q', meta: { back: `#/finance/case/${id}` }, title: c.t, questions: c.questions.map((q, i) => fromBank(q, `case:${id}:${i}`)), area: 'finance', tags: ['finance', 'case'] }) }, 'Start')),
@@ -122,7 +126,7 @@ function annotate(root, id) {
     fx.stagger([...result.children]);
   };
   root.append(h('div', { class: 'lesson' },
-    h('div', { class: 'page-head' }, h('div', {}, h('a', { href: '#/finance', class: 'muted small' }, '← Business & Finance'), h('h1', {}, a.t), h('div', { class: 'sub' }, 'Pick a label, then tap sentences. Separate what is claimed from what is shown.'))),
+    h('div', { class: 'page-head' }, h('div', {}, h('a', { href: '#/finance/classic', class: 'muted small' }, '← Cases & lessons'), h('h1', {}, a.t), h('div', { class: 'sub' }, 'Pick a label, then tap sentences. Separate what is claimed from what is shown.'))),
     h('div', { class: 'lesson-step' }, h('h3', {}, 'Labels'), legend, h('p', { class: 'small muted', style: { marginTop: '8px' } }, 'Claim = what someone asserts. Evidence = facts that support/contradict. Number = data point. Assumption = what must be true. Opinion = judgment. Context = background.')),
     h('div', { class: 'lesson-step' }, text, h('div', { class: 'row', style: { marginTop: '12px' } }, h('button', { class: 'btn primary', onclick: check }, 'Check my labels'))),
     a.terms ? h('div', { class: 'lesson-step' }, h('h3', {}, 'Key terms'), ...a.terms.map(t => h('p', {}, h('b', {}, t.term + ': '), t.def))) : null,
@@ -141,7 +145,7 @@ function annotateNew(root) {
       location.hash = `#/finance/annotate/${a.id}`;
     } catch (e) { toast(aiErrorText(e), 'bad'); btn.disabled = false; btn.textContent = 'Build the challenge'; }
   };
-  root.append(h('div', { class: 'lesson' }, h('div', { class: 'page-head' }, h('div', {}, h('a', { href: '#/finance', class: 'muted small' }, '← Business & Finance'), h('h1', {}, 'Annotate your own'))),
+  root.append(h('div', { class: 'lesson' }, h('div', { class: 'page-head' }, h('div', {}, h('a', { href: '#/finance/classic', class: 'muted small' }, '← Cases & lessons'), h('h1', {}, 'Annotate your own'))),
     card('', h('div', { class: 'stack' }, ta, btn, h('p', { class: 'small muted' }, 'The text is sent to Claude to build sentence labels and questions.')))));
 }
 
@@ -149,6 +153,7 @@ function annotateNew(root) {
 function deca(root, p) {
   if (p[0] === 'exam') return decax.exam(root, p.slice(1));
   if (p[0] === 'fce') return decax.fce(root, p.slice(1));
+  if (!p[0]) return fin.level(root, 'deca');
   if (p[0]) {
     const cl = DECA.clusters.find(x => x.id === p[0]); if (!cl) return (location.hash = '#/finance/deca');
     if (p[1] === 'read') return renderReading(root, { c: DECAC, u: cl, back: `#/finance/deca/${cl.id}`, area: 'deca', tags: ['deca', cl.id] });
@@ -163,18 +168,6 @@ function deca(root, p) {
     }))));
     return;
   }
-  root.append(h('div', { class: 'page-head' }, h('div', {}, h('a', { href: '#/finance', class: 'muted small' }, '← Business & Finance'), h('h1', {}, 'DECA'), h('div', { class: 'sub' }, 'Finance this year, Business Management & Administration next.'))),
-    h('h3', { class: 'section-h' }, 'This year · Finance'),
-    h('div', { class: 'grid g2', style: { marginBottom: '12px' } },
-      h('a', { class: 'tile', href: '#/finance/deca/exam' }, h('div', { class: 'tile-top' }, h('div', { class: 'tile-ic' }, '📘'), h('span', { class: 'chip acc' }, `${pct(decax.examReadiness())} ready`)),
-        h('h4', {}, 'Learn the Finance exam'), h('div', { class: 'muted' }, '9 areas weighted like the real test · readings, tricks, mock exams'), h('div', { style: { marginTop: '10px' } }, bar(decax.examReadiness()))),
-      h('a', { class: 'tile', href: '#/finance/deca/fce' }, h('div', { class: 'tile-top' }, h('div', { class: 'tile-ic' }, '🤝'), h('span', { class: 'chip acc' }, `${pct(decax.fceReadiness())} ready`)),
-        h('h4', {}, 'Financial Consulting practice'), h('div', { class: 'muted' }, '2026-27 case: retirement & succession · plan, present, get judged'), h('div', { style: { marginTop: '10px' } }, bar(decax.fceReadiness())))),
-    h('h3', { class: 'section-h' }, 'Roleplay events'),
-    h('div', { class: 'disclaimer', style: { marginBottom: '12px' } }, DECA.note),
-    h('div', { class: 'grid g2' }, ...DECA.clusters.map(cl => h('a', { class: 'tile', href: `#/finance/deca/${cl.id}` },
-      h('div', { class: 'tile-top' }, h('div', { class: 'tile-ic' }, cl.id === 'fin' ? '$' : 'M'), h('span', { class: 'chip acc' }, `${pct(unitReadiness(DECAC, cl))} ready`)),
-      h('h4', {}, cl.t), h('div', { class: 'muted' }, cl.events.join(' · ')), h('div', { style: { marginTop: '10px' } }, bar(unitReadiness(DECAC, cl)))))));
 }
 
 function roleplay(root, cl, r) {
@@ -272,7 +265,7 @@ function lab(root, disc) {
       [['Median after 20 yrs', money(f.p50)], ['Bad case (10th pct)', money(f.p10)], ['Good case (90th pct)', money(f.p90)], ['Worst single year', pct(worstYear)]].forEach(([l, v]) => stats.append(h('div', { class: 'kpi' }, h('div', { class: 'kpi-l' }, l), h('div', { class: 'kpi-v' }, v))));
     }, 60);
   }
-  root.append(h('div', { class: 'page-head' }, h('div', {}, h('a', { href: '#/finance', class: 'muted small' }, '← Business & Finance'), h('h1', {}, 'Portfolio lab'), h('div', { class: 'sub' }, '$10,000 · 20 years · 400 simulated paths'))), disc,
+  root.append(h('div', { class: 'page-head' }, h('div', {}, h('a', { href: '#/finance', class: 'muted small' }, '← Finance'), h('h1', {}, 'Portfolio lab'), h('div', { class: 'sub' }, '$10,000 · 20 years · 400 simulated paths'))), disc,
     h('div', { class: 'grid g2' }, card('Allocation', h('div', { class: 'stack' }, ...sliders.map(s => s.el), h('p', { class: 'small muted' }, 'Assumed annual return / volatility: U.S. 7%/16%, Intl 6.5%/18%, Bonds 3.5%/6%, Cash 2%/1%. Illustrative only.'))),
       card('Range of outcomes', h('div', { class: 'stack' }, chartBox, h('p', { class: 'small muted' }, 'Line = median path. Band = 10th to 90th percentile. Notice how more stocks widens the band: higher expected value, more uncertainty.')))),
     h('div', { style: { marginTop: '12px' } }, stats),
